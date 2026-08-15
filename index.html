@@ -5025,7 +5025,7 @@ class Player {
     s+=`技术 | 射门${this.attr["射门"]} 盘带${this.attr["盘带"]} 停球${this.attr["停球"]} 传球${this.attr["传球"]} 任意球${this.attr["任意球"]} 头球${this.attr["头球"]}\n`;
     s+=`精神 | 预判${this.attr["预判"]} 视野${this.attr["视野"]} 镇定${this.attr["镇定"]} 决断${this.attr["决断"]} 意志力${this.attr["意志力"]}\n`;
     s+=`身体 | 爆发力${this.attr["爆发力"]} 速度${this.attr["速度"]} 强壮${this.attr["强壮"]} 耐力${this.attr["耐力"]} 弹跳${this.attr["弹跳"]}\n`;
-    s+=`状态：${state}${this.update_state_arrow()}${this.on_fire>0?" 🔥爆种":""}| 精力${this.energy} 疲劳${this.fatigue} | 信任${this.trust} 声望${this.reputation} 国民度${this.national_fame} 压力${this.pressure}\n`;
+    s+=`状态：${state}${this.update_state_arrow()}${this.on_fire>0?" 🔥爆种":""}| 精力${this.energy} 疲劳${Math.round(this.fatigue)} | 信任${this.trust} 声望${this.reputation} 国民度${this.national_fame} 压力${this.pressure}\n`;
     s+=`合同：周薪${this.wage}万 | 剩余${this.contract_years}年${this.release_clause?" | 解约金"+fmtWan(this.release_clause):""}`;
     s+=`\n财务：现金${Math.round(this.money)}万 | 累计${Math.round(this.total_earned)}万 | 经纪人${this.agent.name}(${this.agent.level}级·${Math.round(this.agent.cut*100)}%)`;
     if(this.teammates.length) s+=`\n队友：${this.teammates.slice(0,5).join("、")}${this.teammates.length>5?"…":""}`;
@@ -5433,7 +5433,7 @@ function _renew_contract(p){
   const new_years=(p.contract_years<=1)?4:(p.contract_years+1);
   narr(`${p.club} 提出续约：周薪 ${offer_wage}万，${new_years} 年。`);
   return ask("续约条款",[`你当前周薪 ${p.wage}万，合同剩 ${p.contract_years} 年。`],
-    [("接受",`周薪 → ${offer_wage}万`),(`要求更高（${offer_wage+2}万`,"董事会关系风险"),("暂不续约","明夏自由身，博更大舞台")],0).then(idx=>{
+    [["接受",`周薪 → ${offer_wage}万`],[`要求更高（${offer_wage+2}万`,"董事会关系风险"],["暂不续约","明夏自由身，博更大舞台"]],0).then(idx=>{
     if(idx===0){ p.wage=offer_wage; p.contract_years=new_years; narr(`  → 续约成功。你安心把心留在 ${p.club}。`); p.morale=clamp(p.morale+8,0,130); }
     else if(idx===1){ if(rand()<0.5){ p.wage=offer_wage+2; p.contract_years=new_years; narr(`  → 董事会点头了。周薪 ${p.wage}万。`); } else { narr("  → 董事会冷脸：'年轻人别太贪。' 续约搁置。"); p.trust=clamp(p.trust-5,0,100); } }
     else { p.flags["合同待定"]=true; narr("  → 你把续约押后。经纪人暗示明年会有更大的舞台。"); }
@@ -5509,8 +5509,8 @@ function evaluate_season(p){
 }
 function rest_decision(p){
   if(p.fatigue<55) return;
-  return ask("疲劳管理",[`疲劳值 ${p.fatigue}。队医盯着你的腿：'再这么踢下去，膝盖会哭。'`],
-    [("轮休一场","疲劳-35，精力+25；缺阵 1 场"),("坚持出战","疲劳+8，受伤风险+；状态可能崩")],0).then(idx=>{
+  return ask("疲劳管理",[`疲劳值 ${Math.round(p.fatigue)}。队医盯着你的腿：'再这么踢下去，膝盖会哭。'`],
+    [["轮休一场","疲劳-35，精力+25；缺阵 1 场"],["坚持出战","疲劳+8，受伤风险+；状态可能崩"]],0).then(idx=>{
     if(idx===0){ p.missed+=1; p.recover(); narr("  → 你坐在替补席，看着队友踢完这一场。腿终于歇了歇。"); }
     else { p.tick_fatigue(8); narr("  → 你决定咬牙上场。教练在教练席上摇了摇头。"); }
   });
@@ -5545,7 +5545,7 @@ function winter_window(p){
     const big=suitors.filter(s=>s.tag==="顶级豪门").concat(suitors.slice(0,1));
     const buyer=big[0]; const trigger=p.release_clause;
     return ask("违约金被激活",[`清晨六点，${buyer.club}（${buyer.league}）直接激活了你的解约金 ${fmtWan(trigger)}！`,`经纪人把合同拍在桌上：'不用谈判了，他们砸钱买断。你的身价 ${market_value(p)}。'`],
-      [("接受买断",`转会费=解约金，直接离队加盟 ${buyer.club}`),("拒绝，留在"+p.club,"违约金压不住你想留下的心")],(auto>0?0:null)).then(idx=>{
+      [["接受买断",`转会费=解约金，直接离队加盟 ${buyer.club}`],["拒绝，留在"+p.club,"违约金压不住你想留下的心"]],(auto>0?0:null)).then(idx=>{
       if(idx===0){ const res={club:buyer.club,league:buyer.league,tag:buyer.tag,fee:trigger,wage:Math.round(Math.max(2,market_value_wan(p)*0.002*buyer.wage_scale)),bonus:Math.round(market_value_wan(p)*0.6),release:null,years:randint(3,5)};
         narr(`  → ${buyer.club} 支付解约金 ${fmtWan(trigger)}，买断生效！`); _apply_transfer(p,res); allocate_sp(p,0.4); return false; }
       narr("  → 你拒绝了买断。违约金条款压不住你的留下。"); p.brand=clamp(p.brand+3,0,100); return true;
@@ -5593,7 +5593,7 @@ function event_final_battle(p){
     return Promise.resolve();
   }
   return ask("第 85 分钟，0-0",[`赛季最重要一战。单刀来了，角度很小。`,`压力槽 ${p.pressure}。你的射门（${starShort(p.attr['射门'])}），队友远门柱无人盯防。`],
-    [("果断打门","射门+大赛发挥-压力修正"),("横传远门柱队友","视野+决断"),("过人再造角度","盘带+技能卡")],0).then(idx=>{
+    [["果断打门","射门+大赛发挥-压力修正"],["横传远门柱队友","视野+决断"],["过人再造角度","盘带+技能卡"]],0).then(idx=>{
     const pressure_mod=(p.pressure>=80?0.15:0);
     if(idx===0){ if(rand()<p.attr["射门"]/200+p.hidden["大赛发挥"]/400-pressure_mod){ narr("  → 进了！！！你打穿了近角！声浪淹没一切！"); p.goals+=1; p.reputation=clamp(p.reputation+20,0,100); p.national_fame=clamp(p.national_fame+25,0,100); p.set_mindset("兴奋",3); p.flags["关键功臣"]=true; } else { narr("  → 打在边网。终场哨响。更衣室死一般寂静。"); p.set_mindset("焦虑",2); p.pressure=clamp(p.pressure+10,0,100); } }
     else if(idx===1){ if(p.attr["视野"]>=80){ narr("  → 横传门前，队友推射空门！他冲过来抱住你！"); p.assists+=1; p.attr["团队合作"]=clamp(p.attr["团队合作"]+1,1,99); p.dressing=clamp(p.dressing+10,0,100); p.flags["关键功臣"]=true; } else narr("  → 传球被破坏。机会没了。"); }
@@ -5613,9 +5613,9 @@ function event_transformation(p){
   const candidates={"高产边锋":["游弋边锋","前插攻击手"],"游弋边锋":["前插攻击手","高产边锋"],"前插攻击手":["高产边锋","游弋边锋"]}[p.playstyle]||["高产边锋"];
   const cands=candidates.filter(c=>!p.unlocked_playstyles.includes(c));
   if(!cands.length) return Promise.resolve();
-  const opts=[("转型"+cands[0],"6周适应期后'版本进化'，数据回弹")];
-  if(cands.length>1) opts.push(("转型"+cands[1],"另一条路"));
-  opts.push(("拒绝，坚持自己","数据持续被针对"));
+  const opts=[["转型"+cands[0],"6周适应期后'版本进化'，数据回弹"]];
+  if(cands.length>1) opts.push(["转型"+cands[1],"另一条路"]);
+  opts.push(["拒绝，坚持自己","数据持续被针对"]);
   return ask("版本的钟声",[`你 ${p.age} 岁。速度已跌破 ${p.attr['速度']}，对手的后卫越来越熟悉你。`,"教练把你叫进办公室：'我们需要你换个活法。'"],opts,0).then(idx=>{
     if(idx<cands.length){ const nw=cands[idx]; p.playstyle=nw; p.unlocked_playstyles.push(nw); p.flags["转型期"]=6; narr(`  → 你开始转型【${nw}】。训练场上的每一天都在撕扯旧的自己。`); if(p.hidden["适应性"]>=75){ narr("  → 适应奇快。两个月后，新的你回来了——数据回弹。"); p.reputation=clamp(p.reputation+10,0,100); } else { narr("  → 转型很痛苦。你在低谷里挣扎了一段时间。"); p.morale=clamp(p.morale-10,0,130); } }
     else { narr("  → 你拒绝了。老去的速度不会等你。接下来两年你的数据持续被针对。"); p.morale=clamp(p.morale-5,0,130); }
@@ -5625,7 +5625,7 @@ function event_coach_change(p){
   hr("事件 · 换帅（模板07 新帅理念不合）");
   const nw=new_coach(p); const old=p.coach;
   return ask("更衣室公告",[`${old.name} 下课了。新帅是 ${nw.name}，风格：${nw.style}（${nw.formation}）。`,`你的踢法在新体系下的兼容度：${p.playstyle}`],
-    [("主动适应新体系","适应期：兼容度临时下调，之后反弹+教练信任"),("找助教传话","50%信任+/50%信任-"),("让经纪人找下家","信任-30，转会传闻")],0).then(idx=>{
+    [["主动适应新体系","适应期：兼容度临时下调，之后反弹+教练信任"],["找助教传话","50%信任+/50%信任-"],["让经纪人找下家","信任-30，转会传闻"]],0).then(idx=>{
     p.coach=nw; p.formation=nw.formation;
     if(idx===0){ p.trust=clamp(p.trust+20,0,100); p.flags["转型期"]=Math.max(p.flags["转型期"]||0,4); narr(`  → 你拥抱新体系。${nw.name} 对你刮目相看。`); }
     else if(idx===1){ if(rand()<0.5){ p.trust=clamp(p.trust+10,0,100); narr("  → 助教帮你说了好话。新帅开始重用你。"); } else { p.trust=clamp(p.trust-15,0,100); narr("  → 传话被新帅知道，他认为你'不信任他'。"); } }
@@ -5835,7 +5835,7 @@ function settle_finance(p){
   narr(`  支出：税${tax.toFixed(0)} + 经纪抽成${agent_cut.toFixed(0)} + 生活${living.toFixed(0)} = ${(tax+agent_cut+living).toFixed(0)}万`);
   narr(`  净入 ${net.toFixed(0)}万 → 现金 ${p.money.toFixed(0)}万（累计税前收入 ${p.total_earned.toFixed(0)}万）`);
   return ask("理财决策",["这笔钱怎么安排？经纪人列了一串方案。"],
-    [("购置豪车名表","现金-25万，商业价值+12，曝光+"),("置业/稳健投资","现金-30万，投资+30万，年化 5%-15%"),("公益捐赠","现金-15万，国民度+8"),("全存银行","现金稳定，无波动")],3).then(idx=>{
+    [["购置豪车名表","现金-25万，商业价值+12，曝光+"],["置业/稳健投资","现金-30万，投资+30万，年化 5%-15%"],["公益捐赠","现金-15万，国民度+8"],["全存银行","现金稳定，无波动"]],3).then(idx=>{
     if(idx===0){ p.money-=25; p.brand+=12; p.exposure=clamp(p.exposure+8,0,100); narr("  → 车库多了台限量超跑。狗仔的镜头追着你拍。商业价值 +12。"); }
     else if(idx===1){ p.money-=30; p.investments+=30; const growth=Math.round(p.investments*uniform(0.05,0.15)); p.investments+=growth; narr(`  → 你买入一处置业与基金组合。一年后增值 ${growth}万（组合 ${p.investments.toFixed(0)}万）。`); }
     else if(idx===2){ p.money-=15; p.national_fame=clamp(p.national_fame+8,0,100); narr("  → 你捐建了一所青训学校。国民度 +8。"); }
@@ -5904,14 +5904,14 @@ function agent_upgrade(p){
   const next_cut=[0.05,0.08,0.10][lvl];
   const next_name=["张伯伦","门德斯式大佬"][lvl];
   return ask("经纪人换代",[`你的经纪人 ${p.agent.name}（${p.agent.level}级 · 谈判加成 ${Math.round(p.agent_bonus()*100)}% · 抽成 ${Math.round(p.agent.cut*100)}%）`,"一家顶级经纪公司递来橄榄枝。"],
-    [(`换：${next_name}`,`谈判加成 ${Math.round((lvl+1)*3)}% → ${Math.round((lvl+2)*3)}%，抽成 ${Math.round(next_cut*100)}%`),("保持现状","多年情谊，分成不变")],0).then(idx=>{
+    [[`换：${next_name}`,`谈判加成 ${Math.round((lvl+1)*3)}% → ${Math.round((lvl+2)*3)}%，抽成 ${Math.round(next_cut*100)}%`],["保持现状","多年情谊，分成不变"]],0).then(idx=>{
     if(idx===0){ p.agent={name:next_name,level:lvl+1,cut:next_cut}; narr(`  → 你签下了 ${p.agent.name}。谈判桌的另一侧开始坐立不安。`); }
   });
 }
 function social_media_event(p){
   if(rand()<0.55||p.followers<3) return Promise.resolve();
   return ask("社媒时刻",[`赛后你的手机一直在响。粉丝数 ${Math.round(p.followers)}万，一条动态就能点燃全网。`],
-    [("发庆祝动态","粉丝+6万，曝光+"),("发低调训练照","粉丝+3万，形象稳"),("开炮引战","粉丝暴涨，但风波风险高"),("关手机","无影响")],1).then(idx=>{
+    [["发庆祝动态","粉丝+6万，曝光+"],["发低调训练照","粉丝+3万，形象稳"],["开炮引战","粉丝暴涨，但风波风险高"],["关手机","无影响"]],1).then(idx=>{
     if(idx===0){ p.followers+=6; p.exposure=clamp(p.exposure+6,0,100); p.post_count+=1; narr("  → '胜利属于大家！'——评论区一夜破万。粉丝 +6万。"); }
     else if(idx===1){ p.followers+=3; p.post_count+=1; narr("  → 一张训练照配文'静水流深'。人设稳定。粉丝 +3万。"); }
     else if(idx===2){ p.followers+=15; p.exposure=clamp(p.exposure+12,0,100); p.post_count+=1; if(rand()<0.5) narr("  → 你炮轰裁判与对手。热搜第一。粉丝暴涨 +15万——但争议也在累积。"); else narr(p.scandal("  → 言词过激引发风波！俱乐部约谈，赞助商紧张。",0.2)); }
@@ -5922,27 +5922,27 @@ function tactics_setup(p){
   // 阵型
   const fm=FORMATION_COMPAT[p.playstyle]||{};
   const fm_opts=Object.entries(fm).sort((a,b)=>b[1]-a[1]).slice(0,4).length?Object.entries(fm).sort((a,b)=>b[1]-a[1]).slice(0,4):[["4-4-2",50]];
-  const opts=[("沿用教练阵型",`${p.formation}`)];
+  const opts=[["沿用教练阵型",`${p.formation}`]];
   for(const [f_,v] of fm_opts.slice(0,3)) opts.push([`改打 ${f_}`,`兼容度 ${v}`]);
   return ask("阵型选择",[`教练默认 ${p.coach.formation}（${p.coach.style}）。你想怎么踢？`,`当前踢法【${p.playstyle}】对各阵型兼容度随队教练评估。`],opts,0).then(idx=>{
     if(idx>0){ p.formation=fm_opts[idx-1][0]; p.tactical.formation=p.formation; narr(`  → 你向教练要了 ${p.formation}。新体系兼容度 ${p.playstyle_compat()}。`); }
     return ask("战术指令",["赛前你拍板全队怎么踢。这决定你本季的攻守倾向。"],
-      [("全攻（高位逼抢）","进球+15%，体能消耗+，评分略降"),("均衡","攻守平衡，无明显倾向"),("铁血防守（稳守反击）","进球-12%，评分+，体能省，受伤风险降")],1);
+      [["全攻（高位逼抢）","进球+15%，体能消耗+，评分略降"],["均衡","攻守平衡，无明显倾向"],["铁血防守（稳守反击）","进球-12%，评分+，体能省，受伤风险降"]],1);
   }).then(d=>{
     p.tactical.directive=["全攻","均衡","铁血防守"][d];
     narr(`  → 战术指令定为【${p.tactical.directive}】。更衣室里，队友们屏息记住你的手势。`);
     return ask("球员角色",[`你的踢法【${p.playstyle}】有哪些定位可选？这决定你场上的职责。`],
-      [("内锋（内切得分）","射门倾向+，助攻略降"),("传统边锋（下底传中）","助攻+，射门略降"),("伪九号（回撤组织）","助攻/评分+，射门略降"),("自由人（前插得分）","射门/评分+")],0);
+      [["内锋（内切得分）","射门倾向+，助攻略降"],["传统边锋（下底传中）","助攻+，射门略降"],["伪九号（回撤组织）","助攻/评分+，射门略降"],["自由人（前插得分）","射门/评分+"]],0);
   }).then(r=>{
     p.tactical.role=["内锋","传统边锋","伪九号","自由人"][r];
     narr(`  → 你被授权打【${p.tactical.role}】。教练在战术板上画出一个圈，落点正是你的活动区。`);
     return ask("逼抢强度",["全队逼抢策略决定攻守节奏与体能消耗。"],
-      [("高位逼抢","进球+8%，体能消耗+，受伤风险+"),("中位防守","攻守均衡"),("低位防反","进球-8%，体能省，受伤风险降")],1);
+      [["高位逼抢","进球+8%，体能消耗+，受伤风险+"],["中位防守","攻守均衡"],["低位防反","进球-8%，体能省，受伤风险降"]],1);
   }).then(pr=>{
     p.tactical.press=["高位","中位","低位"][pr];
     narr(`  → 逼抢强度定为【${p.tactical.press}】。裁判哨响前，你听见身后队友的呼吸节奏。`);
     return ask("轮换策略",["密集赛程下你希望教练怎么用你？"],
-      [("主力死磕","场场首发，进球/评分+，体能消耗大、受伤风险高"),("适度轮换","关键战首发，普通战轮休，均衡"),("保护性轮换","优先保体能防伤病，出场略减")],1);
+      [["主力死磕","场场首发，进球/评分+，体能消耗大、受伤风险高"],["适度轮换","关键战首发，普通战轮休，均衡"],["保护性轮换","优先保体能防伤病，出场略减"]],1);
   }).then(rt=>{
     p.tactical.rotation=["主力死磕","适度轮换","保护性轮换"][rt];
     narr(`  → 轮换策略定为【${p.tactical.rotation}】。体能师点头，队医看了眼你的膝盖。`);
@@ -5957,7 +5957,7 @@ function sponsor_event(p){
     if(p.brand<12) return Promise.resolve();
     const name=SPONSOR_NAMES[tier];
     return ask("赞助商橄榄枝",[`${name} 的球鞋合同摆在桌上：年赞助 ${annual} 万欧，${tier} 级。`,`你的商业价值 ${p.brand}，国民度 ${p.national_fame}。`],
-      [("签约 "+name,"年入赞助，品牌+曝光涨"),("再等等（品牌更高合同更好）","暂缓，留待身价更高")],0).then(idx=>{
+      [["签约 "+name,"年入赞助，品牌+曝光涨"],["再等等（品牌更高合同更好）","暂缓，留待身价更高"]],0).then(idx=>{
       if(idx===0){ sp.brand=name; sp.level=tier; sp.years=3; sp.annual=annual; p.brand=clamp(p.brand+8,0,100); narr(`  → 你与 ${name} 签约！新赛季的广告海报会贴满各大城市地铁站。`); }
     });
   }
@@ -5968,13 +5968,13 @@ function sponsor_event(p){
   if(expire){
     const rival=SPONSOR_NAMES[tier]||base;
     return ask("赞助续约",[`${base} 的合同到期。新报价 ${annual} 万欧/年（${tier} 级）。`],
-      [("续约 "+base,"年赞助延续"),("换 "+rival,"同档竞品接手")],0).then(idx=>{
+      [["续约 "+base,"年赞助延续"],["换 "+rival,"同档竞品接手"]],0).then(idx=>{
       if(idx===1){ sp.brand=rival; sp.level=tier; sp.years=3; sp.annual=annual; p.brand=clamp(p.brand+3,0,100); narr(`  → ${rival} 趁虚而入砸下新约！${base} 的 Logo 从你战靴上消失。`); }
       else { sp.brand=base; sp.level=tier; sp.years=3; sp.annual=annual; narr(`  → 赞助合同续上。${base} 的 Logo 继续陪你征战。`); }
     });
   } else if(up){
     return ask("赞助升级",[`${base} 想升级合同：年赞助 → ${annual} 万欧（${tier} 级）。`],
-      [("接受升级","年收入+"),("维持现状","合同不变")],0).then(idx=>{
+      [["接受升级","年收入+"],["维持现状","合同不变"]],0).then(idx=>{
       if(idx===0){ sp.level=tier; sp.years=3; sp.annual=annual; narr(`  → 合同升级成功！${base} 把你列为全球代言优先顺位。`); }
       else narr("  → 你婉拒了升级。合同暂时维持原样。");
     });
@@ -5986,7 +5986,7 @@ function youth_event(p){
   if(!p.youth_class.length) p.youth_class=[{name:"张晨曦",ca:52,pot:randint(70,92)},{name:"李青锋",ca:50,pot:randint(68,88)}];
   const youth=choice(p.youth_class);
   return ask("青训营来电",[`基地教练推荐了 ${youth.name}：当前 CA ${youth.ca}，潜力 ${youth.pot}。`,"青训教练想听你意见。"],
-    [("上调一线队","补充队友实力，可成长"),("外租锻炼","暂留，未来回归"),("不关注","青训人才随缘")],0).then(idx=>{
+    [["上调一线队","补充队友实力，可成长"],["外租锻炼","暂留，未来回归"],["不关注","青训人才随缘"]],0).then(idx=>{
     if(idx===0){ if(!p.teammates.includes(youth.name)) p.teammates.push(youth.name); p.teammate_levels[youth.name]=Math.min(99,youth.ca+2); narr(`  → ${youth.name} 上调一线队！潜力 ${youth.pot}，你决定亲自带他。`); }
     else if(idx===1) narr(`  → ${youth.name} 外租锻炼，未来可期。`);
     else narr("  → 你无暇顾及青训。那片球场，总有人来总有人走。");
@@ -6011,7 +6011,7 @@ function stage1(p, season){
     p.training_plan=plans[idx];
     narr(`  → 你选择了【${p.training_plan}】。`);
     return ask("与教练沟通定位",[`${p.coach.name} 问你对新赛季的想法。`],
-      [("要主力位置","更衣室+5，信任看性格"),("听安排","信任+10"),("请经纪人铺路","暗中操作")],1);
+      [["要主力位置","更衣室+5，信任看性格"],["听安排","信任+10"],["请经纪人铺路","暗中操作"]],1);
   }).then(idx=>{
     if(idx===0){ p.dressing=clamp(p.dressing+5,0,100); p.trust=clamp(p.trust+(rand()<0.5?10:-5),0,100); }
     else if(idx===1) p.trust=clamp(p.trust+10,0,100);
@@ -6276,7 +6276,7 @@ function coach_ability(p){
 function _coach_season(p,ability,tier,idx){
   hr(`执教 · 第${idx}季 · ${p.coaching.club}（${TIER_NAMES[tier]}）`);
   return ask("战术决策",[`球员们看着战术板。更衣室里挂着你球员时代的照片。`],
-    [("高位逼抢","攻势足球：胜率+，失球+"),("稳守反击","务实：胜率稳，观赏性-"),("传控渗透","优雅：观众爱看，慢热")],1).then(decision=>{
+    [["高位逼抢","攻势足球：胜率+，失球+"],["稳守反击","务实：胜率稳，观赏性-"],["传控渗透","优雅：观众爱看，慢热"]],1).then(decision=>{
     const style={0:0.04,1:0.02,2:0.0}[decision];
     const base=0.60-tier*0.06+(ability-60)/100.0*0.4+style;
     const win_rate=clamp(base+gauss(0,0.08),0.10,0.88);
@@ -6301,7 +6301,7 @@ function coaching_career(p){
   hr("终局分支 · 转教练");
   narr(`挂靴那晚，手机响了——邀约电话不断。你的执教潜质评估：${ability}/99。`);
   return ask("是否转教练",[`${ability}/99 的执教潜质。中国足协与欧陆球探同时伸来橄榄枝。`],
-    [("执教！换一种方式留在足球","开启教练生涯"),("退役享受人生","谢绝，生涯就此定格")],0).then(take=>{
+    [["执教！换一种方式留在足球","开启教练生涯"],["退役享受人生","谢绝，生涯就此定格"]],0).then(take=>{
     if(take!==0){ narr("  你谢绝了所有邀约。真正的传奇，懂得在巅峰时离开。"); return; }
     p.coaching.active=true;
     let tier=0;
@@ -6344,9 +6344,9 @@ function creation(){
   hr("球员创建 · 2008 · 根宝基地");
   const playstyles=Object.keys(CFG.playstyles);
   return ask("选择初始踢法",["三合一基因允许你从三种边路踢法起步。"],
-    [("高产边锋","C罗曼联期：传中+爆发"),("游弋边锋","梅西右路：内切+射门"),("前插攻击手","后插上：无球跑动+直塞")],0).then(ps_idx=>{
+    [["高产边锋","C罗曼联期：传中+爆发"],["游弋边锋","梅西右路：内切+射门"],["前插攻击手","后插上：无球跑动+直塞"]],0).then(ps_idx=>{
     return ask("职业素养路线（二选一）",["这决定你未来 24 年的样子。"],
-      [("C罗路线：自律到偏执","职业素养90：伤病-40%，巅峰长"),("内马尔路线：天赋至上","职业素养65：表现+5%，伤病+40%")],0).then(prof_idx=>{
+      [["C罗路线：自律到偏执","职业素养90：伤病-40%，巅峰长"],["内马尔路线：天赋至上","职业素养65：表现+5%，伤病+40%"]],0).then(prof_idx=>{
       const p=new Player("林一鸣",playstyles[ps_idx],"C罗"===(["C罗","内马尔"][prof_idx])?"C罗":"内马尔");
       p.season_attr_snapshot=Object.assign({},p.attr);
       p.initial_attrs=Object.assign({},p.attr);
@@ -6418,7 +6418,7 @@ const Game={
   finalScreen(p){
     hr("生涯终局 · 存档与再启");
     ask("生涯结束",[`${p.name} 的传奇落幕。你可以保存这份生涯，或开启新的故事。`],
-      [("💾 保存存档","写入浏览器本地"),("🔄 再来一局","回到球员创建"),("📋 查看状态","回看最终面板")],0).then(idx=>{
+      [["💾 保存存档","写入浏览器本地"],["🔄 再来一局","回到球员创建"],["📋 查看状态","回看最终面板"]],0).then(idx=>{
       if(idx===0){ const ok=saveGame(p); narr(ok?"  ✅ 存档已保存。":"  ✕ 保存失败（存储不可用）。"); }
       else if(idx===1){ this.restart(); return; }
       else panel(p.panel());
@@ -6436,7 +6436,7 @@ const Game={
     if(saved){
       this.p=saved; this.updateTop();
       await ask("继续生涯",[`发现存档：${saved.name}（${saved.age}岁 · ${saved.year}年 · ${saved.club}）。我要继续他的故事。`],
-        [("继续生涯","从当前进度接着玩"),("新游戏","重新创建球员")],0).then(async idx=>{
+        [["继续生涯","从当前进度接着玩"],["新游戏","重新创建球员"]],0).then(async idx=>{
         if(idx===0){ await this.runCareer(saved); } else { logEl.innerHTML=""; await this.startFromCreation(); }
       });
     } else {
