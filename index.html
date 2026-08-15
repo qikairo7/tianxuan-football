@@ -3,90 +3,91 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<meta name="theme-color" content="#000000">
+<meta name="theme-color" content="#f2f2f7">
 <title>《天选之子》· 足球生涯模拟器</title>
 <style>
-/* ═══ Apple / iOS 风格 · 深色模式 ═══ */
+/* ═══ Apple / iOS 风格 · 浅色模式 ═══ */
 :root{
-  --bg:#000; --bg2:#0a0a0c;
-  --fill:#1c1c1e; --fill2:#2c2c2e; --fill3:#3a3a3c;
-  --card:rgba(30,30,32,.66); --card2:rgba(44,44,46,.72);
-  --nav:rgba(12,12,14,.72);
-  --ink:#fff; --muted:#98989f; --sub:#d1d1d6;
-  --line:rgba(255,255,255,.12); --hairline:rgba(255,255,255,.07);
-  --blue:#0a84ff; --green:#30d158; --red:#ff453a; --orange:#ff9f0a; --purple:#bf5af2; --teal:#64d2ff;
+  --bg:#f2f2f7; --bg2:#e5e5ea;
+  --fill:#ffffff; --fill2:#ffffff; --fill3:#e5e5ea;
+  --card:rgba(255,255,255,.92); --card2:rgba(255,255,255,.86);
+  --nav:rgba(249,249,251,.82);
+  --ink:#1c1c1e; --muted:#8e8e93; --sub:#3a3a3c;
+  --line:rgba(60,60,67,.22); --hairline:rgba(60,60,67,.12);
+  --blue:#007aff; --green:#34c759; --red:#ff3b30; --orange:#ff9500; --purple:#af52de; --teal:#5ac8fa;
   --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif;
   --r-card:20px; --r-btn:14px; --r-pill:999px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
-body{background:#000;color:var(--ink);font-family:var(--font);line-height:1.62;
+body{background:var(--bg);color:var(--ink);font-family:var(--font);line-height:1.62;
   overflow:hidden;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
-#app{display:flex;flex-direction:column;height:100vh;max-width:640px;margin:0 auto;position:relative;background:#000;
+#app{display:flex;flex-direction:column;height:100vh;max-width:640px;margin:0 auto;position:relative;
   background:
-    radial-gradient(120% 60% at 50% -12%, rgba(28,44,72,.55), rgba(28,44,72,0) 55%),
-    radial-gradient(80% 36% at 92% 110%, rgba(10,132,255,.10), rgba(10,132,255,0) 60%),
-    #000}
+    radial-gradient(120% 55% at 50% -10%, rgba(0,122,255,.07), rgba(0,122,255,0) 55%),
+    radial-gradient(85% 40% at 95% 112%, rgba(52,199,89,.08), rgba(52,199,89,0) 58%),
+    var(--bg)}
 /* 环境光（绝不拦截触摸） */
-#app::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;opacity:.5;
-  background:radial-gradient(100% 40% at 85% 106%, rgba(48,209,88,.06), transparent 60%)}
+#app::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;opacity:.6;
+  background:radial-gradient(100% 38% at 8% 108%, rgba(175,82,222,.05), transparent 62%)}
 /* ── 顶栏（两行：标题行 + 状态行）── */
 #topbar{flex:0 0 auto;z-index:3;position:relative;background:var(--nav);
   backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);
   border-bottom:1px solid var(--hairline)}
 #topbar .row{display:flex;align-items:center;gap:10px;padding:calc(8px + env(safe-area-inset-top)) 14px 7px}
 #topbar .crest{flex:0 0 auto;width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;
-  font-size:18px;background:linear-gradient(160deg,#2a3a60,#151d33);
-  box-shadow:0 2px 10px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.14)}
+  font-size:18px;background:linear-gradient(160deg,#e8f0ff,#cfe0ff);
+  box-shadow:0 2px 8px rgba(0,122,255,.18),inset 0 1px 0 rgba(255,255,255,.8)}
 #topbar .titles{flex:0 0 auto;min-width:0}
-#topbar .logo{font-size:17px;font-weight:700;letter-spacing:.3px;color:#fff;white-space:nowrap}
+#topbar .logo{font-size:17px;font-weight:700;letter-spacing:.3px;color:var(--ink);white-space:nowrap}
 #topbar .logo small{display:block;font-size:9px;font-weight:600;letter-spacing:2.5px;color:var(--muted);margin-top:1px}
 #topbar .spacer{flex:1}
-#topbar .btn{flex:0 0 auto;background:var(--fill2);border:none;border-radius:12px;padding:7px 13px;
-  font-size:12.5px;font-weight:600;color:#fff;cursor:pointer;line-height:1.2;
-  box-shadow:0 1px 4px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.09);transition:transform .12s,background .12s}
+#topbar .btn{flex:0 0 auto;background:#fff;border:1px solid var(--hairline);border-radius:12px;padding:7px 13px;
+  font-size:12.5px;font-weight:600;color:var(--blue);cursor:pointer;line-height:1.2;
+  box-shadow:0 1px 4px rgba(0,0,0,.06);transition:transform .12s,background .12s}
 #topbar .btn:active{transform:scale(.93);background:var(--fill3)}
 #topbar .statusrow{display:flex;align-items:center;gap:7px;padding:0 16px 9px;font-size:11.5px;color:var(--muted);min-width:0}
-#topbar .statusrow .big{color:#fff;font-weight:600;font-size:12.5px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#topbar .statusrow .big{color:var(--ink);font-weight:600;font-size:12.5px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #topbar .statusrow .sep{opacity:.35}
 #topbar .statusrow .tail{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* ── 剧情区 ── */
 #stage{flex:1 1 auto;overflow-y:auto;padding:14px 14px 12px;-webkit-overflow-scrolling:touch;position:relative;z-index:1}
 #stage::-webkit-scrollbar{width:5px}
-#stage::-webkit-scrollbar-thumb{background:rgba(255,255,255,.22);border-radius:4px}
+#stage::-webkit-scrollbar-thumb{background:rgba(60,60,67,.28);border-radius:4px}
 #log{display:flex;flex-direction:column;gap:8px}
-.msg{white-space:pre-wrap;word-break:break-word;font-size:15px;line-height:1.66;animation:msgIn .26s ease}
+.msg{white-space:pre-wrap;word-break:break-word;font-size:15px;line-height:1.66;color:var(--sub);animation:msgIn .26s ease}
 @keyframes msgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .msg .narr{padding-left:4px}
-/* 章节小标（Apple 分组标题：小号蓝色大写） */
-.msg.hr{color:var(--blue);font-weight:700;font-size:12.5px;letter-spacing:1.4px;
-  margin:12px 0 2px;padding:4px 6px 6px;border:none;background:none;box-shadow:none}
+/* 章节小标（Apple 分组标题） */
+.msg.hr{color:var(--blue);font-weight:700;font-size:12.5px;letter-spacing:1.2px;
+  margin:12px 2px 2px;padding:4px 2px 6px;border:none;background:none;box-shadow:none}
 /* 决策卡（iOS 分组卡片） */
 .msg.decision{margin-top:14px;padding:16px 16px 10px;background:var(--card);
   backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%);
-  border:1px solid var(--hairline);border-radius:var(--r-card);box-shadow:0 8px 28px rgba(0,0,0,.5)}
-.msg.decision .d-title{font-size:16px;font-weight:700;color:#fff;margin-bottom:6px;letter-spacing:.2px}
+  border:1px solid var(--hairline);border-radius:var(--r-card);box-shadow:0 2px 12px rgba(0,0,0,.05)}
+.msg.decision .d-title{font-size:16px;font-weight:700;color:var(--ink);margin-bottom:6px;letter-spacing:.2px}
 .msg.decision .d-body{color:var(--muted);font-size:13.5px;margin-bottom:9px}
 .msg.info{color:var(--muted);font-size:13px}
-.msg.good{color:var(--green)}
-.msg.bad{color:var(--red)}
-.msg.warn{color:var(--orange)}
-/* 数据面板（深灰玻璃卡） */
-.msg.panel{background:var(--card2);border:1px solid var(--hairline);border-radius:var(--r-card);
-  padding:14px 16px;font-size:13px;line-height:1.75;color:var(--sub);box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.msg.good{color:#248a3d}
+.msg.bad{color:#d70015}
+.msg.warn{color:#c93400}
+/* 数据面板 */
+.msg.panel{background:var(--fill);border:1px solid var(--hairline);border-radius:var(--r-card);
+  padding:14px 16px;font-size:13px;line-height:1.75;color:var(--sub);box-shadow:0 1px 6px rgba(0,0,0,.05)}
 /* ── 决策按钮（iOS Action Sheet 风格）── */
 #choices{flex:0 0 auto;padding:10px 14px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--hairline);
-  background:var(--nav);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);
+  background:rgba(242,242,247,.92);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);
   max-height:48vh;overflow-y:auto;z-index:3}
 #choices .btn{display:block;width:100%;text-align:left;margin-bottom:9px;padding:14px 15px;
-  background:var(--fill2);border:none;border-radius:var(--r-btn);color:#fff;font-size:15px;cursor:pointer;position:relative;
-  box-shadow:0 2px 10px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.09);transition:transform .12s,background .12s}
+  background:var(--fill2);border:1px solid var(--hairline);border-radius:var(--r-btn);color:var(--ink);
+  font-size:15px;cursor:pointer;position:relative;
+  box-shadow:0 1px 5px rgba(0,0,0,.06);transition:transform .12s,background .12s}
 #choices .btn:active{transform:scale(.97);background:var(--fill3)}
-#choices .btn .lbl{font-weight:600;color:#fff;padding-right:32px}
+#choices .btn .lbl{font-weight:600;color:var(--ink);padding-right:32px}
 #choices .btn .desc{display:block;color:var(--muted);font-size:12.5px;margin-top:2px}
 #choices .btn .key{position:absolute;right:14px;top:50%;transform:translateY(-50%);
   width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-  font-size:12px;font-weight:700;color:#fff;background:var(--blue);box-shadow:0 2px 8px rgba(10,132,255,.45)}
+  font-size:12px;font-weight:700;color:#fff;background:var(--blue);box-shadow:0 2px 8px rgba(0,122,255,.35)}
 /* 底部复用 */
 #bottom{display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--hairline);background:var(--nav)}
 #bottom button{flex:1;padding:12px;border:none;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer}
@@ -5035,7 +5036,11 @@ class Player {
   ca(){ const w=CFG.playstyles[this.playstyle].weights; let tot=0,wt=0;
     for(const a in w){ tot+=this.attr[a]*w[a]; wt+=w[a]; } return Math.round(tot/wt); }
   playstyle_compat(){ const fm=FORMATION_COMPAT[this.playstyle][this.formation]||50;
-    const sm=(STYLE_PLAYSTYLE_MOD[this.coach.style]||{})[this.playstyle]||0; return clamp(fm+sm,0,100); }
+    const sm=(STYLE_PLAYSTYLE_MOD[this.coach.style]||{})[this.playstyle]||0;
+    let v=clamp(fm+sm,0,100);
+    if(this.flags["转型期"]) v=clamp(v-12,0,100);            // 踢法转型期
+    if(this.flags["新东家适应期"]) v=clamp(v-10,0,100);        // 新东家适应期
+    return v; }
   mindset_mod(){ if(this.mindset&&this.mindset[1]>0){ const m=(CFG.mindset_mods[this.mindset[0]]||{}).performance||0; return m; } return 0; }
   form_mod(){ return (this.form-5)*0.04; }
   energy_mod(){ if(this.energy<35)return -0.12; if(this.energy<55)return -0.05; return 0; }
@@ -5061,7 +5066,7 @@ class Player {
   panel(){
     const state=["冰凉","低迷","一般","平平","正常","正常","良好","火热"][this.form-1];
     let s=`【${this.name}】 ${this.age}岁 · ${this.club} · ${this.league} · 踢法：${this.playstyle}\n`;
-    s+=`出身：${this.academy} · 家境：${this.background}\n`;
+    s+=`出身：${this.academy} · 家境：${this.background}${this.jersey?" · "+this.jersey+"号":""}\n`;
     s+=`CA ${this.ca()} | 身价 ${this.value||'—'} | 教练：${this.coach.name}（${this.coach.style}·${this.formation}）→ 兼容度 ${this.playstyle_compat()}\n`;
     s+=`技术 | 射门${this.attr["射门"]} 盘带${this.attr["盘带"]} 停球${this.attr["停球"]} 传球${this.attr["传球"]} 任意球${this.attr["任意球"]} 头球${this.attr["头球"]}\n`;
     s+=`精神 | 预判${this.attr["预判"]} 视野${this.attr["视野"]} 镇定${this.attr["镇定"]} 决断${this.attr["决断"]} 意志力${this.attr["意志力"]}\n`;
@@ -5262,11 +5267,31 @@ function simulate_match(p,comp,importance=0,derby=null){
   const subs=choices([0,1,2,3],[10,30,45,15]);
   const result=goals>opp_goals?"胜":(goals===opp_goals?"平":"负");
   const xg=Math.round(lam_g*100)/100;
-  p.match_stats.push({year:p.year,comp,opp,os:os_,goals,assists,rating,shots:my_shots,poss:my_poss,xg,saves,corners,fouls,ontarget:on_target,passes,opp_goals,result,opp_red,my_red,subs});
-  narr(`  🏟 全场比分：${p.club} ${goals} - ${opp_goals} ${opp}（${result}）`);
+  const dribbles=Math.round(poisson(2.0+(p.attr["盘带"]-70)*0.05)+1);
+  const duels_won=Math.round(uniform(2,9));
+  // 进球时间线（模拟真实转播）
+  const goal_minutes=[]; for(let g=0;g<goals;g++) goal_minutes.push(randint(2,90));
+  goal_minutes.sort((a,b)=>a-b);
+  p.match_stats.push({year:p.year,comp,opp,os:os_,goals,assists,rating,shots:my_shots,poss:my_poss,xg,saves,corners,fouls,ontarget:on_target,passes,opp_goals,result,opp_red,my_red,subs,minutes:goal_minutes,dribbles});
+  // 转播式战报
+  const res_emoji=result==="胜"?"✅":(result==="平"?"➖":"❌");
+  narr(`  ${res_emoji} 【${comp}】${p.club} ${goals} - ${opp_goals} ${opp}${derby_on?" 🔥":""}`);
+  if(goals>0){
+    const verbs=["禁区内推射","远射世界波","头球砸门","单刀冷静挑射","任意球直挂死角","补射入网","抢点垫射","外脚背爆射"];
+    const mins_txt=goal_minutes.map((m,i)=>`${m}' ⚽${choice(verbs)}`).join(" · ");
+    narr(`  ⏱ ${mins_txt}`);
+  }
+  if(assists>0) narr(`  🎯 ${assists} 次助攻：你的传球撕开了防线。`);
   if(opp_red) narr(`  🟥 对手 ${opp} 染红，少打一人。`);
   if(my_red) narr(`  🟥 你所在的球队吃到红牌，场面一度被动。`);
   if(subs) narr(`  🔄 教练做出 ${subs} 次换人调整。`);
+  narr(`  📊 评分 ${rating} · 射门 ${my_shots}（射正 ${on_target}）· 过人 ${dribbles} · 对抗成功 ${duels_won} · 传球 ${passes} · 控球 ${my_poss}% · xG ${xg}`);
+  // 新东家适应期：每场消耗
+  if(p.flags["新东家适应期"]){
+    p.flags["新东家适应期"]-=1;
+    if(p.flags["新东家适应期"]===0){ p.trust=clamp(p.trust+10,0,100); narr("  ✅ 适应期结束！你摸透了新体系，更衣室也认了你（信任+10）。"); }
+    else if(p.flags["新东家适应期"]<=3) narr(`  🧳 新东家适应中（剩 ${p.flags["新东家适应期"]} 场）——跑位还是有点别扭。`);
+  }
   p.apps+=1; p.goals+=goals; p.assists+=assists;
   p.best_match_goals=Math.max(p.best_match_goals,goals);
   p.ratings.push(rating);
@@ -5277,17 +5302,16 @@ function simulate_match(p,comp,importance=0,derby=null){
   const tag=`[${comp} vs ${opp}]`;
   const skill=(goals && rand()<0.5)?choice(p.skills):null;
   if(goals>=3){
-    narr(`${tag} 帽子戏法！评分 ${rating}`);
+    narr(`  🎩 帽子戏法！`);
     narr('  📢 解说："'+(skill?commentary_line("skill",skill||"头球"):commentary_line("goal"))+'"');
     p.reputation=clamp(p.reputation+6,0,100); p.form=clamp(p.form+2,1,8); p.flags["表演"]=true;
-    if(importance||FIVE_LEAGUES.includes(p.league)){ p.career["帽子戏法"]+=1; narr(`  🎩 帽子戏法！生涯第 ${p.career["帽子戏法"]} 次。（历史坐标：C罗 ${DB.benchmarks["帽子戏法"].record} 次）`); }
+    if(importance||FIVE_LEAGUES.includes(p.league)){ p.career["帽子戏法"]+=1; narr(`  🎩 生涯第 ${p.career["帽子戏法"]} 次戴帽。（历史坐标：C罗 ${DB.benchmarks["帽子戏法"].record} 次）`); }
   } else if(goals>0){
-    narr(`${tag} 你打进 ${goals} 球，助攻 ${assists} 次。评分 ${rating}`);
     narr('  📢 解说："'+(skill?commentary_line("skill",skill):commentary_line("goal"))+'"');
     p.form=clamp(p.form+1,1,8);
-  } else if(assists>0){ narr(`${tag} 你送出 ${assists} 次助攻，串联起全队进攻。评分 ${rating}`); p.form=clamp(p.form+1,1,8); }
-  else if(rating>=7.0) narr(`${tag} 表现活跃，多次制造威胁。评分 ${rating}`);
-  else { narr(`${tag} 状态平平。评分 ${rating}`); if(rand()<0.4) p.form=clamp(p.form-1,1,8); }
+  } else if(assists>0){ narr(`  👏 ${assists} 助攻串联全队，教练在场边鼓掌。`); p.form=clamp(p.form+1,1,8); }
+  else if(rating>=7.0) narr(`  💪 ${tag} 无进球但表现活跃，多次制造威胁。`);
+  else if(rating<6.0){ narr(`  😞 ${tag} 状态平平，几次处理球被球迷嘘了。`); if(rand()<0.4) p.form=clamp(p.form-1,1,8); }
   p.tick_mindset();
   p.update_state_arrow();
   if(rating>=7.5) p.hot_streak+=1; else p.hot_streak=0;
@@ -5450,10 +5474,29 @@ function negotiate_transfer(p,offer,auto=null){
    ===================================================================== */
 
 /* ---------- 转会执行 ---------- */
+function _coach_for_tier(tag,league){
+  // 按俱乐部档位挑教练：豪门必是名帅，中游是实力派，土豪可能是名帅也可能是淘金者
+  let pool=COACH_POOL.slice();
+  if(tag==="顶级豪门") pool=pool.filter(c=>c.traits>=86);
+  else if(tag==="五大中游") pool=pool.filter(c=>c.traits>=76);
+  else if(tag==="跳板") pool=pool.filter(c=>c.traits<=84);
+  else if(tag==="天价土豪") pool=pool.concat([{name:"过气大牌名帅",style:"防反",formation:"4-2-3-1",traits:74}]);
+  if(FIVE_LEAGUES.includes(league)) pool=pool.filter(c=>c.traits>=76);
+  if(!pool.length) pool=COACH_POOL.slice();
+  return choice(pool);
+}
 function _apply_transfer(p, res){
   const old_club=p.club;
   p.set_club(res.club,res.league);
   p.wage=res.wage; p.signing_bonus=res.bonus; p.release_clause=res.release; p.contract_years=res.years;
+  // ★ 新俱乐部 = 新教练 + 新体系 + 信任重建 + 球衣号码
+  const nw=_coach_for_tier(res.tag,res.league);
+  const old_coach=p.coach;
+  p.coach=nw; p.formation=nw.formation; p.tactical.formation=nw.formation;
+  p.trust=clamp(Math.round(38+p.reputation*0.25),20,60);   // 新帅不认识你，信任重置
+  p.flags["新东家适应期"]=6;                                  // 6 周适应期
+  const jersey=randint(2,30);
+  p.jersey=jersey;
   const rep={"顶级豪门":30,"五大中游":25,"跳板":20,"天价土豪":-5}[res.tag]||15;
   p.reputation=clamp(p.reputation+rep,0,100);
   if(res.tag==="天价土豪"){ p.brand+=30; narr(`  → 你接下了天价合同。欧洲球探的笔记合上了，但账户数字很漂亮。`); }
@@ -5463,6 +5506,16 @@ function _apply_transfer(p, res){
   if(p.hidden["适应性"]>=75) p.set_mindset("兴奋",2); else p.set_mindset("焦虑",1);
   narr(`  新合同：周薪 ${p.wage}万 | 签字费 ${fmtWan(p.signing_bonus)} | 剩余 ${p.contract_years} 年`+(p.release_clause?` | 解约金 ${fmtWan(p.release_clause)}`:""));
   narr(`  身价已重估：${market_value(p)}（转会费 ${fmtWan(res.fee)} 载入你的档案）。`);
+  // ★ 入队仪式：发布会 + 新帅 + 号码 + 队友
+  hr(`官宣 · ${res.club}`);
+  narr(`  📰 亮相发布会：上百名记者，快门声像雨点。你举起 ${jersey} 号球衣，背后印着你的名字。`);
+  narr(`  🧑‍✈️ 新主帅 ${nw.name}（${res.league}名帅）：'我要你踢 ${nw.formation} 里的${p.role}。按我的方式来。'`);
+  narr(`     战术风格：${nw.style} · 前任 ${old_coach? old_coach.name+"（"+old_coach.style+"）":"—"} · 兼容度 ${p.playstyle_compat()}`);
+  if(p.teammates.length){
+    const stars=p.teammates.slice(0,3).join("、");
+    narr(`  👥 更衣室：${stars}${p.teammates.length>3?" 等人":""}已经就位。有人点头，有人打量你——新人要靠自己赢位置。`);
+  }
+  narr(`  🔁 信任重置为 ${p.trust}（新帅不认识你）。接下来 6 周是适应期：多跑位、少抱怨，用训练说话。`);
   p.transfer_log.push({year:p.year,from:old_club,to:res.club,league:res.league,fee_wan:res.fee,tag:res.tag});
 }
 function _renew_contract(p){
@@ -6225,6 +6278,7 @@ function season_end_aging(p){
   p.contract_years=Math.max(0,p.contract_years-1);
   if(p.contract_years===0) narr(`  合同还剩最后一年——下赛季结束你就是自由身了。经纪人提醒你注意。`);
   delete p.flags["转型期"];
+  delete p.flags["新东家适应期"];
   for(const k of ["表演","关键功臣","黄牌","苦练"]) delete p.flags[k];
   p.form=clamp(p.form+1,1,8);
   const relax=15+Math.max(0,p.age-22)+Math.min(p.career["金球奖"],10);
