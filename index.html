@@ -104,6 +104,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);line-height:1
         <small>CHOSEN ONE · 生涯</small>
       </div>
       <div class="spacer"></div>
+      <button class="btn" id="paceBtn" onclick="Game.togglePace()">🎬 沉浸</button>
       <button class="btn" onclick="Game.togglePanel()">📋 状态</button>
       <button class="btn" onclick="Game.save()">💾 存档</button>
     </div>
@@ -4877,6 +4878,21 @@ function poisson(lam){ if(lam<=0) return 0; const L=Math.exp(-lam); let k=0,p=1;
 function strhash(s){ let h=0; for(let i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))>>>0; } return h; }
 function star(v){ for(const b of CFG.star_bands){ if(b.min<=v&&v<=b.max) return b.star+' '+b.label; } return '?'; }
 function starShort(v){ return star(v).slice(0,5); }
+/* 节奏控制与训练周叙事 */
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+const TRAINING_FLAVOR=[
+  "  🏃 训练场：加练结束后你独自加罚了三十个定位球，天黑透了才走。",
+  "  🏃 录像课：教练把你上轮的跑位剪成集锦——一半是亮点，一半是'这里再想想'。",
+  "  🏋️ 健身房：深蹲架上的杠铃又加了片。队医在记录本上点了点头。",
+  "  🤝 分组对抗：你和主力一组赢了教学赛，更衣室里有人开始叫你的外号。",
+  "  🧠 战术板：新的一套肋部配合练了整整一周，你在梦里都在跑位。",
+  "  ⚽ 抢圈训练：你一脚出球的三连触赢得了全队的'哦——'。",
+  "  💆 恢复日：冰浴、按摩、睡眠监测。教练拍了拍你的肩：'养好身体，周末靠你。'",
+];
+function training_week(p,round){
+  if(Game.fastMode) return;
+  narr(choice(TRAINING_FLAVOR)+`（周中 · 联赛第${round}轮备战）`);
+}
 function fmtWan(v){ if(v>=10000) return (v/10000).toFixed(2)+' 亿欧'; return Math.round(v)+' 万欧'; }
 function fmt(v,dec){ return v.toFixed(dec===undefined?2:dec); }
 
@@ -4972,6 +4988,7 @@ const _ACH_BANK = [
 class Player {
   constructor(name, playstyle, prof){
     this.name=name; this.playstyle=playstyle; this.looks=99;
+    this.position="边锋"; this.pa=99; this.height=178;
     this.attr=Object.assign({},COSMIC);
     this.unlocked_playstyles=[playstyle];
     this.hidden={"决心":90,"职业素养":prof==="C罗"?90:65,"适应性":78,"大赛发挥":85,"稳定性":80,"体质":90};
@@ -5065,12 +5082,22 @@ class Player {
   flag(k,d){ return this.flags[k]!==undefined?this.flags[k]:d; }
   panel(){
     const state=["冰凉","低迷","一般","平平","正常","正常","良好","火热"][this.form-1];
-    let s=`【${this.name}】 ${this.age}岁 · ${this.club} · ${this.league} · 踢法：${this.playstyle}\n`;
-    s+=`出身：${this.academy} · 家境：${this.background}${this.jersey?" · "+this.jersey+"号":""}\n`;
-    s+=`CA ${this.ca()} | 身价 ${this.value||'—'} | 教练：${this.coach.name}（${this.coach.style}·${this.formation}）→ 兼容度 ${this.playstyle_compat()}\n`;
-    s+=`技术 | 射门${this.attr["射门"]} 盘带${this.attr["盘带"]} 停球${this.attr["停球"]} 传球${this.attr["传球"]} 任意球${this.attr["任意球"]} 头球${this.attr["头球"]}\n`;
-    s+=`精神 | 预判${this.attr["预判"]} 视野${this.attr["视野"]} 镇定${this.attr["镇定"]} 决断${this.attr["决断"]} 意志力${this.attr["意志力"]}\n`;
-    s+=`身体 | 爆发力${this.attr["爆发力"]} 速度${this.attr["速度"]} 强壮${this.attr["强壮"]} 耐力${this.attr["耐力"]} 弹跳${this.attr["弹跳"]}\n`;
+    const arch=pos_arch(this);
+    let s=`【${this.name}】 ${this.age}岁 · ${this.position} · ${this.club}（${this.league}）\n`;
+    s+=`${this.height} · 惯用脚右脚 · 出身：${this.academy} · 家境：${this.background}${this.jersey?" · "+this.jersey+"号":""}\n`;
+    s+=`能力：CA ${this.ca()}（潜力：？？教练也说不准）| 身价 ${this.value||'—'} · 主帅 ${this.coach.name}（${this.coach.style}·${this.formation}）→ 体系兼容 ${this.playstyle_compat()}\n`;
+    // FM 式分组星级（默认视图；长按可看数值——此处保持叙事友好）
+    const tech=[["射门","射门"],["远射","远射"],["盘带","盘带"],["停球","停球"],["传球","传球"],["任意球","任意球"],["头球","头球"],["传中","传中"]];
+    const men=[["预判","预判"],["视野","视野"],["镇定","镇定"],["决断","决断"],["无球跑动","无球跑动"],["意志力","意志力"],["团队合作","团队合作"]];
+    const phy=[["爆发力","爆发力"],["速度","速度"],["强壮","强壮"],["耐力","耐力"],["弹跳","弹跳"],["灵活","灵活"]];
+    s+="技术｜"+tech.map(([k,n])=>`${n} ${starShort(this.attr[k]||50)}`).join(" ")+"\n";
+    s+="精神｜"+men.map(([k,n])=>`${n} ${starShort(this.attr[k]||50)}`).join(" ")+"\n";
+    s+="身体｜"+phy.map(([k,n])=>`${n} ${starShort(this.attr[k]||50)}`).join(" ")+"\n";
+    // 教练评价：取与位置最相关的属性
+    const focus=arch.grp==="DEF"?["抢断","预判","头球"]:(arch.grp==="MID"?["视野","传球","耐力"]:["射门","盘带","爆发力"]);
+    const best=focus.reduce((a,b)=>((this.attr[a]||50)>=(this.attr[b]||50)?a:b));
+    const worst=focus.reduce((a,b)=>((this.attr[a]||50)<=(this.attr[b]||50)?a:b));
+    s+=`教练评价："${star(this.attr[best]).split(" ")[1]}的${best}是看家本领；但${star(this.attr[worst]).split(" ")[1]}的${worst}……还会被更高级别的联赛拷问。"\n`;
     s+=`状态：${state}${this.update_state_arrow()}${this.on_fire>0?" 🔥爆种":""}| 精力${this.energy} 疲劳${Math.round(this.fatigue)} | 信任${this.trust} 声望${this.reputation} 国民度${this.national_fame} 压力${this.pressure}\n`;
     s+=`合同：周薪${this.wage}万 | 剩余${this.contract_years}年${this.release_clause?" | 解约金"+fmtWan(this.release_clause):""}`;
     s+=`\n财务：现金${Math.round(this.money)}万 | 累计${Math.round(this.total_earned)}万 | 经纪人${this.agent.name}(${this.agent.level}级·${Math.round(this.agent.cut*100)}%)`;
@@ -5109,9 +5136,10 @@ function allocate_sp(p,ratio=1.0,silent=false){
   const spent=[]; let guard=0;
   while(p.sp>0&&guard<400){ guard++; let progressed=false;
     for(const key of plan_rules){ if(p.sp<=0)break; const cost=sp_cost(p.attr[key]);
-      if(cost!==null&&cost<=p.sp){ p.sp-=cost; p.attr[key]+=1; spent.push(key); progressed=true; } }
+      if(cost!==null&&cost<=p.sp&&p.attr[key]<p.pa){ p.sp-=cost; p.attr[key]+=1; spent.push(key); progressed=true; } }
     if(!progressed)break; }
-  if(!silent) narr(`[成长分配] 自动分配：${spent.join("/")}（留存 ${p.sp} SP）`);
+  if(!silent&&spent.length) narr(`  📈 教练组评估：本赛季你取得了肉眼可见的进步（成长：${spent.length} 项）。`);
+  if(!silent&&guard>=399) narr("  ⚠ 球探悄悄记下：这孩子的成长似乎触到了天花板。");
   return grant;
 }
 function market_value_wan(p){
@@ -5131,7 +5159,9 @@ function market_value_wan(p){
 function market_value(p){ return fmtWan(market_value_wan(p)); }
 
 /* ================= 世界反馈层 ================= */
-function platform(year){ if(year<=2001)return"《体坛周报》球迷来信"; if(year<=2003)return"《足球之夜》热线电话"; return "虎扑步行街/足球话题区"; }
+function platform(year){ if(year<=2001)return"《体坛周报》球迷来信"; if(year<=2003)return"《足球之夜》热线电话";
+  if(year<=2009)return"天涯论坛·体育天地"; if(year<=2015)return"虎扑步行街/微博热搜";
+  if(year<=2020)return"虎扑/抖音短视频"; return "抖音/B站/小红书"; }
 function commentary_line(kind,skill=null){
   const pool=COMMENTATORS[choice(Object.keys(COMMENTATORS))];
   if(kind==="skill"&&skill&&SKILL_COMMENTARY[skill]) return SKILL_COMMENTARY[skill];
@@ -5224,12 +5254,95 @@ function derby_rival(p){ const rivals=DERBY[p.club]||[]; const pool=new Set(DB.c
   for(const r of rivals) if(pool.has(r)) return r; return null; }
 function is_derby(p,opp){ return (DERBY[p.club]||[]).includes(opp); }
 
-function simulate_match(p,comp,importance=0,derby=null){
+/* ============ 位置体系（FM 式）：影响进球/助攻产出、关键时刻池、战报侧重 ============ */
+const POSITION_ARCHETYPES={
+  "中锋":  {grp:"FWD",g:1.35,a:0.8, h:"188cm",desc:"禁区终结者 · 头球/射门/对抗"},
+  "影锋":  {grp:"FWD",g:1.10,a:1.1, h:"183cm",desc:"游弋二前锋 · 跑位/终结"},
+  "边锋":  {grp:"FWD",g:1.00,a:1.3, h:"178cm",desc:"边路爆点 · 盘带/爆发/传中"},
+  "内锋":  {grp:"FWD",g:1.15,a:1.0, h:"180cm",desc:"内切型 · 远射/无球跑动"},
+  "前腰":  {grp:"MID",g:0.75,a:1.5, h:"178cm",desc:"组织核心 · 视野/直塞"},
+  "中前卫":{grp:"MID",g:0.55,a:1.15,h:"180cm",desc:"B2B 全能中场 · 跑动/传球"},
+  "后腰":  {grp:"MID",g:0.30,a:0.9, h:"184cm",desc:"中场屏障 · 抢断/预判"},
+  "中后卫":{grp:"DEF",g:0.15,a:0.5, h:"190cm",desc:"后防铁闸 · 抢断/头球/指挥"},
+  "边后卫":{grp:"DEF",g:0.20,a:0.9, h:"176cm",desc:"边路走廊 · 耐力/往返"},
+};
+function pos_arch(p){ return POSITION_ARCHETYPES[p.position]||POSITION_ARCHETYPES["边锋"]; }
+/* ============ 比赛内关键时刻：真正的"踢球感觉" ============ */
+const KEY_MOMENTS={
+FWD:[
+ {t:"单刀机会",s:"防线身后！你反越位成功，单刀直面门将——全场屏息。",opts:[
+   {l:"推射远角",attrs:["射门"],win:"⚽ 冷静推射远角——球贴着门柱内侧滚入网窝！",lose:"门将神勇封出近角，你抱头遗憾。"},
+   {l:"挑过门将",attrs:["技术","镇定"],win:"⚽ 轻巧一挑，皮球划过门将指尖坠入空门！解说员破音了。",lose:"挑射稍稍高出横梁，错失良机。"},
+   {l:"横传空位队友",attrs:["视野","团队合作"],win:"🎯 你无私横传，队友推射空门得手——助攻到手！",lose:"横传被回追后卫破坏，机会化为泡影。"}]},
+ {t:"禁区混战",s:"角球混战，球弹到你脚下，身边全是腿——只有一瞬间的处理时间。",opts:[
+   {l:"凌空抽射",attrs:["射门","技术"],win:"⚽ 凌空一脚，球在人群缝隙中钻进网底！",lose:"打门被封堵弹出，禁区一片人仰马翻。"},
+   {l:"扣球晃开角度",attrs:["盘带"],win:"⚽ 一扣一拨晃倒后卫，小角度推射入网！",lose:"扣球稍大，被后卫大脚解围。"},
+   {l:"回做弧顶",attrs:["传球"],win:"🎯 你回敲弧顶，队友迎球怒射破门——助攻！",lose:"回传力量稍轻被断，进攻终结。"}]},
+ {t:"反击三打二",s:"断球成功！三打二的反击局面，你持球推进，两侧队友飞速插上。",opts:[
+   {l:"自己带到底",attrs:["盘带","速度"],win:"⚽ 你一路狂奔杀入禁区，低射近角得手！",lose:"回追后卫及时铲球破坏，功亏一篑。"},
+   {l:"提前直塞",attrs:["直塞","预判"],win:"🎯 手术刀直塞撕开防线，队友单刀推射——助攻！",lose:"直塞稍大，门将出击没收。"},
+   {l:"等队友包抄",attrs:["无球跑动"],win:"⚽ 你压着节奏推进，最后横传门前——自己也包抄到位推射入网！",lose:"节奏一慢，对手防线落位，反击无疾而终。"}]},
+ {t:"角球争顶",s:"你的角球开向后点，你在人群中起跳——这是属于中锋的时刻。",opts:[
+   {l:"前点甩头攻门",attrs:["头球","弹跳"],win:"⚡ 力压后卫，甩头攻门——球擦着门柱内侧入网！",lose:"顶到球但偏出立柱，抱憾不已。"},
+   {l:"后点包抄",attrs:["无球跑动"],win:"⚽ 你鬼魅般绕到后点，轻松垫射入网！",lose:"后点包抄差之毫厘，眼睁睁看着球划过。"},
+   {l:"拉出禁区接应",attrs:["传球"],win:"🎯 你回撤接应后做球，队友禁区外世界波——助攻！",lose:"接应被识破，进攻转入阵地战。"}]},
+],
+MID:[
+ {t:"远射良机",s:"禁区弧顶，防守球员退防不及——球在你脚下，射程之内。",opts:[
+   {l:"拔脚怒射",attrs:["远射"],win:"⚽ 一记贴地斩直窜死角！门将鞭长莫及！",lose:"势大力沉但高出横梁，看台一片叹息。"},
+   {l:"继续盘带推进",attrs:["盘带"],win:"⚽ 你连过一人杀入禁区，推射远角得手！",lose:"盘带被铲断，球权易主。"},
+   {l:"分边调度",attrs:["视野"],win:"🎯 大范围转移撕开空当，边路传中制造进球——助攻！",lose:"转移精度稍差，出了边线。"}]},
+ {t:"直塞抉择",s:"前场肋部，前锋正在启动——传，还是不传？这一脚决定进攻成败。",opts:[
+   {l:"手术刀直塞",attrs:["直塞","视野"],win:"🎯 直塞穿透整条防线，队友单刀赴会推射破门！",lose:"力量稍大，门将出击没收——差之毫厘。"},
+   {l:"安全横传",attrs:["传球"],win:"配合娴熟，球队保住球权继续施压。",lose:"横传被预判拦截，反击被打。"},
+   {l:"自己射门",attrs:["射门"],win:"⚽ 你选择自己来——角度极小却搓射入网！",lose:"仓促起脚被挡出，队友举手示意位置更好。"}]},
+ {t:"定位球主罚",s:"前场任意球，人墙已排好。教练在场边比划：这一球交给你。",opts:[
+   {l:"直接攻门",attrs:["任意球"],win:"⚽ 电梯球直挂死角！门将目送皮球入网！",lose:"越过人墙但偏出立柱，掩面遗憾。"},
+   {l:"传中找高点",attrs:["传中"],win:"🎯 精准弧线找到高中锋，头槌破门——助攻！",lose:"落点稍差被门将摘下。"},
+   {l:"战术短传",attrs:["传球"],win:"出其不意的短传配合撕开防线，进攻潮水般涌来。",lose:"配合失误，浪费了一次定位球机会。"}]},
+],
+DEF:[
+ {t:"禁区一对二",s:"对手反击！两名攻击手直插禁区，你是最后一道防线——身后就是门将。",opts:[
+   {l:"果断上抢",attrs:["抢断","勇敢"],win:"🛡 干净利落的滑铲！球权到手，全场为你鼓掌。",lose:"上抢冒了！对手一抹而过——身后球迷的心凉了半截。"},
+   {l:"且战且退",attrs:["预判","镇定"],win:"🛡 你封住传球线路又卡住射门角度，硬生生把危机拖成了角球。教科书般的防守！",lose:"退防稍慢，对手横传制造了巨大险情。"},
+   {l:"战术犯规",attrs:["决断"],win:"🛡 中场附近干净放倒对手，用一张黄牌扼杀了反击——队友拍拍你的头。",lose:"犯规位置太危险，任意球险些改写比分，还吃到了黄牌。"}]},
+ {t:"由守转攻",s:"你断下皮球，眼前是大片开阔地——后场的出球选择，此刻全看你。",opts:[
+   {l:"长传找前锋",attrs:["传球"],win:"🎯 五十米长传精确制导，前锋胸部停球形成单刀——门将出身也当不了这样的炮弹手！",lose:"长传出边线，教练在场边抱头。"},
+   {l:"带球推进",attrs:["盘带"],win:"你亲自带球杀过半场，赢得全场喝彩——进攻由你发起。",lose:"盘带被断，后场丢球太危险——好在队友及时补位。"},
+   {l:"稳妥回传",attrs:["镇定"],win:"不贪功，回传门将重新组织——稳健的选择赢得了信任。",lose:"回传力量稍轻，惊出一身冷汗。"}]},
+]};
+async function key_moment(p,ctx){
+  const arch=pos_arch(p);
+  const pool=KEY_MOMENTS[arch.grp];
+  const mo=choice(pool);
+  const hint=mo.opts.map(o=>{
+    const vs=o.attrs.map(a=>`${a} ${starShort(p.attr[a]||50)}`).join(" · ");
+    return [o.l,`需要：${vs}`];
+  });
+  const intro=`⏸ 【${mo.t}】${mo.s}`;
+  const idx=await ask(mo.t,[intro],hint,0,true);
+  const opt=mo.opts[idx===null?0:idx];
+  let power=opt.attrs.reduce((s,a)=>s+(p.attr[a]||50),0)/opt.attrs.length;
+  let prob=clamp((power-55)/50+0.30,0.12,0.88); // 55→0.30, 95→0.70
+  if(p.on_fire>0) prob+=0.10;
+  const ok=rand()<prob;
+  narr(`  ${ok?"（成功）":"（失败）"} ${ok?opt.win:opt.lose}`);
+  if(ok){
+    if(opt.win.startsWith("⚽")) return {goal:1};
+    if(opt.win.startsWith("🎯")) return {assist:1};
+    return {def:1}; // 防守成功
+  } else {
+    if(opt.lose.includes("黄牌")) return {foul:1};
+    return {def:0};
+  }
+}
+async function simulate_match(p,comp,importance=0,derby=null){
   if(rand()<0.08){ p.missed+=1; narr(`[${comp}] 你本场未进入大名单（${p.role}）。在看台上观察对手，记了满满一页笔记。`); return null; }
   const opp=derby||choice(opp_pool(p));
   const derby_on=derby!==null||is_derby(p,opp);
   if(derby_on){ importance=Math.max(importance,1); p.pressure=clamp(p.pressure+8,0,100); narr(`  🔥 德比战！${p.club} vs ${opp} —— 全城目光都在这座球场。压力槽 +8。`); }
   const os_=opp_strength(opp,p), st=opp_style(opp);
+  const arch=pos_arch(p);
   const opp_factor=clamp(1-(os_-50)/50*0.4,0.6,1.15);
   const lm=(CFG.leagues[p.league]||{mods:{}});
   const compat=p.playstyle_compat()/100.0, dmod=p.directive_mod();
@@ -5238,26 +5351,38 @@ function simulate_match(p,comp,importance=0,derby=null){
   const style_boost=st.name==="高位逼抢"?0.06:(st.name==="摆大巴"?-0.04:0);
   const rot=p.tactical.rotation;
   const rot_mod={"主力死磕":{lam:1.02,fat:1.25,inj:1.15},"保护性轮换":{lam:0.95,fat:0.7,inj:0.8},"适度轮换":{lam:1.0,fat:1.0,inj:1.0}}[rot];
-  const base_ca=(p.ca()-70)*0.035;
+  const base_ca=(p.ca()-70)*0.035+(arch.grp==="DEF"?(p.attr["抢断"]-70)*0.015:0);
   const mindset=p.mindset_mod()+p.form_mod()+p.energy_mod()+p.fatigue_mod()+p.on_fire_mod();
   const compat_mod=(compat-0.6)*0.25;
   const pressure_penalty=p.pressure>=80?-0.10:(p.pressure>=60?-0.05:0);
   let perf=base_ca+mindset+compat_mod+pressure_penalty+gauss(0,0.35)+importance*0.15;
   perf+=(50-os_)*0.012;
   if(derby_on) perf+=p.hidden["大赛发挥"]/400.0;
-  const rating=clamp(Math.round((6.2+perf+uniform(0,0.4))*10)/10,4.0,10.0);
+  const rating_base=clamp(Math.round((6.2+perf+uniform(0,0.4))*10)/10,4.0,10.0);
   const boost=1+p.mindset_mod()+p.form_mod()+p.fatigue_mod()+p.on_fire_mod()+importance*0.3;
   const shoot=p.attr["射门"]; const shoot_factor=1+Math.max(0,shoot-80)*0.05;
   let lam_g=shoot*0.008*shoot_factor*boost*compat*dmod.lam*opp_factor*st.att*rot_mod.lam;
   lam_g*=Math.pow(lm.mods["出场机会"]||1.0,0.2);
-  const lam_a=p.attr["视野"]*0.006*boost*compat*opp_factor;
+  lam_g*=arch.g;                                       // 位置：产出权重
+  const lam_a=p.attr["视野"]*0.006*boost*compat*opp_factor*arch.a;
   const my_shots=poisson(Math.max(0.0,lam_g*2.2));
   let goals=0,on_target=0;
   const x_per=lam_g/Math.max(1,my_shots);
   for(let i=0;i<my_shots;i++){ const on=rand()<0.5; if(on)on_target++; if(rand()<x_per*(on?1.0:0.55)) goals++; }
   let assists=0; const na=poisson(lam_a); for(let i=0;i<na;i++) if(rand()<0.8) assists++;
+  // ── 关键时刻：临场决策（速览模式自动跳过） ──
+  let rating=rating_base, km_line=null;
+  if(!Game.fastMode&&rand()<0.45){
+    const km=await key_moment(p,{comp,opp});
+    if(km.goal){ goals+=1; on_target+=1; km_line="⚽ 你亲手把关键时刻变成了进球！"; }
+    else if(km.assist){ assists+=1; km_line="🎯 关键时刻的选择变成了一次助攻！"; }
+    else if(km.def){ rating=clamp(rating+0.4,4.0,10.0); km_line="🛡 关键防守成功，教练在场边为你鼓掌。"; }
+    else if(km.foul){ rating=clamp(rating-0.2,4.0,10.0); km_line="🟨 战术犯规吃牌，但化解了危机。"; }
+    else { rating=clamp(rating-0.15,4.0,10.0); km_line="那个瞬间没能把握住——足球就是这样。"; }
+  }
   const passes=Math.round(my_shots*8+uniform(30,70)); const corners=Math.round(my_shots*uniform(0.4,0.8));
   const fouls=Math.round(poisson(2.5)+(press==="高位"?1:0)); const saves=Math.max(0,on_target-goals);
+  const tackles=arch.grp==="DEF"?Math.round(uniform(3,8)+p.attr["抢断"]*0.03):Math.round(uniform(0,3));
   const my_poss=clamp(Math.round(52+(compat-0.6)*14+(55-os_)*0.3+press_boost*40+style_boost*40+gauss(0,4)),28,75);
   const our_def=(p.attr["预判"]+p.attr["专注"])/200.0;
   let lam_og=(os_/50.0)*st.att*(1.15-dmod.lam*0.2)*(1.1-our_def*0.3)*(1-press_boost+0.1);
@@ -5269,10 +5394,9 @@ function simulate_match(p,comp,importance=0,derby=null){
   const xg=Math.round(lam_g*100)/100;
   const dribbles=Math.round(poisson(2.0+(p.attr["盘带"]-70)*0.05)+1);
   const duels_won=Math.round(uniform(2,9));
-  // 进球时间线（模拟真实转播）
   const goal_minutes=[]; for(let g=0;g<goals;g++) goal_minutes.push(randint(2,90));
   goal_minutes.sort((a,b)=>a-b);
-  p.match_stats.push({year:p.year,comp,opp,os:os_,goals,assists,rating,shots:my_shots,poss:my_poss,xg,saves,corners,fouls,ontarget:on_target,passes,opp_goals,result,opp_red,my_red,subs,minutes:goal_minutes,dribbles});
+  p.match_stats.push({year:p.year,comp,opp,os:os_,goals,assists,rating,shots:my_shots,poss:my_poss,xg,saves,corners,fouls,ontarget:on_target,passes,opp_goals,result,opp_red,my_red,subs,minutes:goal_minutes,dribbles,tackles});
   // 转播式战报
   const res_emoji=result==="胜"?"✅":(result==="平"?"➖":"❌");
   narr(`  ${res_emoji} 【${comp}】${p.club} ${goals} - ${opp_goals} ${opp}${derby_on?" 🔥":""}`);
@@ -5281,11 +5405,14 @@ function simulate_match(p,comp,importance=0,derby=null){
     const mins_txt=goal_minutes.map((m,i)=>`${m}' ⚽${choice(verbs)}`).join(" · ");
     narr(`  ⏱ ${mins_txt}`);
   }
+  if(km_line) narr(`  ${km_line}`);
   if(assists>0) narr(`  🎯 ${assists} 次助攻：你的传球撕开了防线。`);
   if(opp_red) narr(`  🟥 对手 ${opp} 染红，少打一人。`);
   if(my_red) narr(`  🟥 你所在的球队吃到红牌，场面一度被动。`);
   if(subs) narr(`  🔄 教练做出 ${subs} 次换人调整。`);
-  narr(`  📊 评分 ${rating} · 射门 ${my_shots}（射正 ${on_target}）· 过人 ${dribbles} · 对抗成功 ${duels_won} · 传球 ${passes} · 控球 ${my_poss}% · xG ${xg}`);
+  if(arch.grp==="DEF") narr(`  📊 评分 ${rating} · 抢断 ${tackles} · 解围 ${duels_won} · 对抗成功 ${duels_won+2} · 传球 ${passes} · 控球 ${my_poss}%${opp_goals===0?" · 零封 🧱":""}`);
+  else if(arch.grp==="MID") narr(`  📊 评分 ${rating} · 射门 ${my_shots}（射正 ${on_target}）· 关键传球 ${assists+randint(0,3)} · 抢断 ${tackles} · 传球 ${passes} · 控球 ${my_poss}% · xG ${xg}`);
+  else narr(`  📊 评分 ${rating} · 射门 ${my_shots}（射正 ${on_target}）· 过人 ${dribbles} · 对抗成功 ${duels_won} · 传球 ${passes} · 控球 ${my_poss}% · xG ${xg}`);
   // 新东家适应期：每场消耗
   if(p.flags["新东家适应期"]){
     p.flags["新东家适应期"]-=1;
@@ -5310,6 +5437,7 @@ function simulate_match(p,comp,importance=0,derby=null){
     narr('  📢 解说："'+(skill?commentary_line("skill",skill):commentary_line("goal"))+'"');
     p.form=clamp(p.form+1,1,8);
   } else if(assists>0){ narr(`  👏 ${assists} 助攻串联全队，教练在场边鼓掌。`); p.form=clamp(p.form+1,1,8); }
+  else if(arch.grp==="DEF"&&rating>=7.0){ narr(`  💪 ${tag} 后防线的中流砥柱，一次次瓦解对手攻势。`); }
   else if(rating>=7.0) narr(`  💪 ${tag} 无进球但表现活跃，多次制造威胁。`);
   else if(rating<6.0){ narr(`  😞 ${tag} 状态平平，几次处理球被球迷嘘了。`); if(rand()<0.4) p.form=clamp(p.form-1,1,8); }
   p.tick_mindset();
@@ -6125,7 +6253,7 @@ function stage1(p, season){
 }
 function stage2(p){
   hr("阶段二 · 上半赛季（9-12月）");
-  narr(`联赛开打。你的角色：${p.role}`);
+  narr(`联赛开打。你的位置：${p.position} · 角色：${p.role}`);
   const n=CFG.prototype_defaults.season_matches_stage2;
   return (async()=>{
     for(let i=1;i<=n;i++){
@@ -6134,8 +6262,10 @@ function stage2(p){
         if(p.flags["受伤中"]===0){ narr("  [伤愈] 你回到了大名单。"); p.set_mindset("兴奋",1); } else narr(`  [第${i}轮] 伤停恢复中（剩 ${p.flags['受伤中']} 周）。`);
         continue;
       }
-      if(i===6){ const dr=derby_rival(p); if(dr) simulate_match(p,`${p.league}第${i}轮·德比`,1,dr); else simulate_match(p,`${p.league}第${i}轮`); }
-      else simulate_match(p,`${p.league}第${i}轮`);
+      if(i>1&&i%3===0) training_week(p,i);          // 训练周叙事：给赛季以呼吸感
+      if(i===6){ const dr=derby_rival(p); if(dr) await simulate_match(p,`${p.league}第${i}轮·德比`,1,dr); else await simulate_match(p,`${p.league}第${i}轮`); }
+      else await simulate_match(p,`${p.league}第${i}轮`);
+      await sleep(Game.fastMode?40:380);            // 节奏：一场一拍
       if(i===5) await event_scout(p);
       if(i===9) await event_chance_or_bench(p);
       if(i===14) await social_media_event(p);
@@ -6155,7 +6285,7 @@ function domestic_cup(p){
     for(let r=1;r<=rounds;r++){
       const opp=choice(opp_pool(p));
       narr(`  · ${cup_name}第${r}轮 vs ${opp}（${r===rounds?'决赛前夕':''}）`);
-      const g=simulate_match(p,`${cup_name}${r}轮 vs ${opp}`);
+      const g=await simulate_match(p,`${cup_name}${r}轮 vs ${opp}`);
       if(g===null){ narr(`  → 你轮休未出场，球队该轮晋级。`); reached+=1; continue; }
       if(rand()<0.55+p.ca()*0.003){
         reached+=1; narr("  → 晋级！");
@@ -6180,7 +6310,9 @@ function stage4(p){
       let label=(i<n)?`${p.league}第${i+18}轮`:"关键轮";
       const dr=(i===5)?derby_rival(p):null;
       if(dr) label+="·德比";
-      simulate_match(p,label,importance,dr);
+      if(i>1&&i%3===0) training_week(p,i+18);
+      await simulate_match(p,label,importance,dr);
+      await sleep(Game.fastMode?40:380);
       if(i%5===0) await rest_decision(p);
       if(i===3||i===9) await micro_event(p);
       if(i===8) await social_media_event(p);
@@ -6344,7 +6476,9 @@ function memorial(p){
 }
 function career_overview(p){
   hr("生涯总览 · 终局");
-  narr(`  ${p.name} · 中国 · 187cm · 颜值 ${p.looks} · PA 99`);
+  const pa_grade=p.pa>=98?"历史级天才（金球奖级别的潜力）":p.pa>=96?"天赋出众（顶级豪门核心）":p.pa>=92?"职业球员主体（顶级联赛主力）":"职业边缘人（努力立足次级联赛）";
+  narr(`  ${p.name} · 中国 · ${p.height} · 颜值 ${p.looks}`);
+  narr(`  📋 谜底揭晓：你的 PA 是 ${p.pa}（${pa_grade}）。当年那份球探报告，现在可以合上了。`);
   narr(`  生涯跨度：16 岁出道 → ${p.age} 岁（${p.year} 年）`);
   narr(`  俱乐部：${p.career_goals} 球 ${p.career_assists} 助攻 | 末战身价 ${p.value||'—'}`);
   narr(`  国家队：${p.national_caps} 场 ${p.national_goals} 球 | 国民度 ${p.national_fame}`);
@@ -6439,8 +6573,8 @@ function retirement(p){
   return Promise.resolve();
 }
 
-/* ---------- 创建 ---------- */
-// 青训基地：起始球队 + 教练风格 + 属性侧重
+/* ---------- 创建（FM 式：年代/位置/技术特点/足球版图/青训/家境） ---------- */
+// 青训基地：起始球队 + 教练风格 + 属性侧重（中国线）
 const ACADEMY_OPTIONS=[
   {name:"根宝基地",club:"上海东亚",coach:{name:"徐根宝",style:"边路传中",formation:"4-4-2",traits:80},
    buff:{盘带:2,传中:2,速度:1},desc:"上海崇明 · 边路传中流 · 技术+速度"},
@@ -6449,7 +6583,7 @@ const ACADEMY_OPTIONS=[
   {name:"浙江绿城青训",club:"浙江绿城",coach:{name:"冈田系教头",style:"控球",formation:"4-3-3",traits:80},
    buff:{停球:2,传球:2,视野:1},desc:"杭州 · 技术流 · 停球+视野"},
   {name:"恒大足校",club:"广州恒大",coach:{name:"里皮系教头",style:"均衡",formation:"4-3-3",traits:85},
-   buff:{速度:2,爆发力:2,射门:1},desc:"广州 · 全面流 · 速度+爆发 "},
+   buff:{速度:2,爆发力:2,射门:1},desc:"广州 · 全面流 · 速度+爆发"},
   {name:"校园足球（非专业）",club:"上海东亚",coach:{name:"徐根宝",style:"边路传中",formation:"4-4-2",traits:80},
    buff:{决断:2,意志力:2},desc:"草根成长 · 精神属性+ · 起点更低"},
 ];
@@ -6460,6 +6594,34 @@ const BACKGROUND_OPTIONS=[
   {name:"中产小康",money:20,hidden:{适应性:3},reputation:3,desc:"有余钱请私教 · 适应性+，初始资金宽裕"},
   {name:"富二代",money:80,hidden:{适应性:5,决心:-3},reputation:8,desc:"家底雄厚+曝光起步 · 适应性+，但不够狠"},
 ];
+// 年代（FM 式）：不同年代 = 不同足坛格局
+const ERA_OPTIONS=[
+  {name:"经典年代（1995-2000）",year:1997,desc:"意甲小世界杯巅峰 · 传统442 · 防反盛行"},
+  {name:"黄金窗口（2002-2015）",year:2008,desc:"战术演变最剧烈 · 梅罗时代萌芽 · 欧战冷门多（推荐）"},
+  {name:"现代年代（2016-2024）",year:2018,desc:"高位逼抢成熟 · 石油财政统治 · 短视频时代"},
+  {name:"穿越到 2003",year:2003,desc:"银河战舰 · 波尔图黑马前夜"},
+  {name:"穿越到 2012",year:2012,desc:"梅西91球之年 · 西超双雄争霸"},
+  {name:"穿越到 2020",year:2020,desc:"疫情空场 · 拜仁全冠"},
+];
+// 技术特点（决定初始属性侧重与踢法模板）
+const TRAIT_OPTIONS=[
+  {name:"速度型",buff:{爆发力:5,速度:5},penalty:{强壮:-2},desc:"爆发力/速度+5，对抗稍弱"},
+  {name:"技术型",buff:{盘带:5,停球:5},penalty:{耐力:-2},desc:"盘带/停球+5，体能一般"},
+  {name:"身体型",buff:{强壮:5,弹跳:5},penalty:{技术:-2},desc:"强壮/弹跳+5，技术偏粗糙"},
+  {name:"意识型",buff:{预判:5,镇定:5},penalty:{速度:-2},desc:"预判/镇定+5，速度偏慢"},
+  {name:"均衡型",buff:{},penalty:{},desc:"无明显强弱项 · 全能但无突出点"},
+];
+// 足球版图（联赛国家 → 可选级别；中国线保留青训基地）
+const WORLD_OPTIONS=[
+  {name:"中国",tiers:["中超","中甲"],desc:"根宝/鲁能/绿城/恒大青训 · 中超金元与低谷"},
+  {name:"英格兰",tiers:["英超","英冠"],desc:"最快节奏 · 冬季魔鬼赛程"},
+  {name:"西班牙",tiers:["西甲","西乙"],desc:"技术流圣地 · 执法宽松"},
+  {name:"意大利",tiers:["意甲","意乙"],desc:"战术纪律 · 链式防守"},
+  {name:"德国",tiers:["德甲","德乙"],desc:"高位逼抢 · 攻势足球"},
+  {name:"法国",tiers:["法甲","法乙"],desc:"天赋联赛 · 对抗原始"},
+  {name:"葡萄牙/荷兰",tiers:["葡超","荷甲"],desc:"造星工厂 · 跳板联赛 · 球探遍地"},
+  {name:"其他欧洲",tiers:["苏超","俄超","土超","比甲","丹超"],desc:"小联赛闯荡 · 曝光度低但出场稳"},
+];
 function apply_academy(p,a){ p.academy=a.name; p.set_club(a.club, a.club==="广州恒大"||a.club==="山东鲁能"?"中超":"中甲");
   p.coach=Object.assign({},a.coach); p.formation=a.coach.formation; p.tactical.formation=a.coach.formation;
   for(const k in a.buff) p.attr[k]=clamp((p.attr[k]||0)+a.buff[k],1,99);
@@ -6468,31 +6630,87 @@ function apply_background(p,b){ p.background=b.name; p.money=b.money; if(b.money
   for(const k in b.hidden) p.hidden[k]=clamp((p.hidden[k]||0)+b.hidden[k],1,99);
   p.reputation=clamp(p.reputation+(b.reputation||0),0,100);
   narr(`  家境：${b.name}。${b.desc}`); }
+function roll_pa(p){
+  // FM 式隐藏潜力：120-144(15%) / 145-165(55%) / 166-185(22%) / 186-200(8%) → 映射到 88-99
+  const r=rand(); let pa;
+  if(r<0.15) pa=randint(88,92); else if(r<0.70) pa=randint(92,96); else if(r<0.92) pa=randint(96,98); else pa=99;
+  const cur_max=Math.max(...Object.values(p.attr));
+  p.pa=Math.max(pa,cur_max);   // 保证不低于当前属性上限
+  return pa;
+}
+function pick_euro_club(p,league){
+  const clubs=(DB.clubs[league]||[]).slice();
+  const club=choice(clubs);
+  const pres=(CFG.leagues[league]||{}).prestige||60;
+  const nw=_coach_for_tier(pres>=85?"顶级豪门":(pres>=70?"五大中游":"跳板"),league);
+  p.academy=`${club}青训学院`;
+  p.set_club(club,league);
+  p.coach=Object.assign({},nw); p.formation=nw.formation; p.tactical.formation=nw.formation;
+  narr(`  → 你加入了 ${club} 的青训学院（${league}）。训练基地的一切都是全新的。`);
+  narr(`  🧑‍✈️ 青训总监 ${nw.name}（${nw.style} · ${nw.formation}）：'欢迎。在这里，天赋只是入场券。'`);
+}
 function creation(){
-  hr("球员创建 · 2008");
-  const playstyles=Object.keys(CFG.playstyles);
-  return ask("选择初始踢法",["三合一基因允许你从三种边路踢法起步。"],
-    [["高产边锋","C罗曼联期：传中+爆发"],["游弋边锋","梅西右路：内切+射门"],["前插攻击手","后插上：无球跑动+直塞"]],0).then(ps_idx=>{
-    return ask("职业素养路线（二选一）",["这决定你未来 24 年的样子。"],
-      [["C罗路线：自律到偏执","职业素养90：伤病-40%，巅峰长"],["内马尔路线：天赋至上","职业素养65：表现+5%，伤病+40%"]],0).then(prof_idx=>{
-      return ask("选择青训基地",["你从哪里起步？这决定初始球队、教练战术与属性侧重。"],
-        ACADEMY_OPTIONS.map(a=>[a.name,a.desc]),0).then(ac_idx=>{
-        return ask("选择家境",["你的家庭背景会影响初始资金、隐藏属性与起始声望。"],
-          BACKGROUND_OPTIONS.map(b=>[b.name,b.desc]),0).then(bg_idx=>{
-        const p=new Player("林一鸣",playstyles[ps_idx],"C罗"===(["C罗","内马尔"][prof_idx])?"C罗":"内马尔");
-        apply_academy(p,ACADEMY_OPTIONS[ac_idx]);
-        apply_background(p,BACKGROUND_OPTIONS[bg_idx]);
-        p.season_attr_snapshot=Object.assign({},p.attr);
-        p.initial_attrs=Object.assign({},p.attr);
-        narr(`身高187cm | 颜值99 | 惯用脚右脚(弱足4星) | PA 99(隐藏) | 初始CA ${p.ca()}`);
-        narr("基因技能卡：马赛回旋/电梯球/踩单车/牛尾巴/外脚背/挑球过人/诈术");
-        narr(`阵型起点：${p.coach.name} ${p.formation} ${p.coach.style} → 你的兼容度 ${p.playstyle_compat()}`);
-        narr(`正式登场：${p.club}（${p.league}）· 周薪 ${p.wage}万 · 现金 ${p.money}万`);
-        return p;
-        });
+  hr("球员创建 · 职业生涯起点");
+  return ask("① 选择年代",["不同年代对应完全不同的足坛格局与战术时代——这将是你职业生涯的底色。"],
+    ERA_OPTIONS.map(e=>[e.name,e.desc]),1).then(era_idx=>{
+    const era=ERA_OPTIONS[era_idx];
+    return ask("② 选择场上位置",["位置决定你的成长曲线、关键时刻类型与数据侧重。（门将线开发中）"],
+      Object.keys(POSITION_ARCHETYPES).map(pos=>[pos,POSITION_ARCHETYPES[pos].desc]),2).then(pos_idx=>{
+        const position=Object.keys(POSITION_ARCHETYPES)[pos_idx];
+        return ask("③ 选择技术特点",["这决定你的初始属性侧重与踢法模板——也会影响关键时刻的成败概率。"],
+          TRAIT_OPTIONS.map(t=>[t.name,t.desc]),0).then(trait_idx=>{
+            const trait=TRAIT_OPTIONS[trait_idx];
+            return ask("④ 选择足球版图",["你将在哪片大陆开始职业生涯？不同联赛的训练质量、曝光度与出场机会完全不同。"],
+              WORLD_OPTIONS.map(w=>[w.name,w.desc]),0).then(world_idx=>{
+                const world=WORLD_OPTIONS[world_idx];
+                if(world.name==="中国"){
+                  // 中国线：青训基地 → 家境
+                  return ask("⑤ 选择青训基地",["你从哪里起步？这决定初始球队、教练战术与属性侧重。"],
+                    ACADEMY_OPTIONS.map(a=>[a.name,a.desc]),0).then(ac_idx=>{
+                    return ask("⑥ 选择家境",["你的家庭背景会影响初始资金、隐藏属性与起始声望。"],
+                      BACKGROUND_OPTIONS.map(b=>[b.name,b.desc]),0).then(bg_idx=>{
+                      return build_player(era,position,trait,{kind:"中国",academy:ACADEMY_OPTIONS[ac_idx],background:BACKGROUND_OPTIONS[bg_idx]});
+                    });
+                  });
+                }
+                // 欧洲线：级别 → 家境
+                return ask("⑤ 选择联赛级别",["顶级联赛训练设施最好但竞争惨烈；次级联赛更容易拿到一线队出场。"],
+                  world.tiers.map(t=>[t,`${(CFG.leagues[t]||{}).style||""} · 声望${(CFG.leagues[t]||{}).prestige||"?"}`]),0).then(lg_idx=>{
+                  return ask("⑥ 选择家境",["你的家庭背景会影响初始资金、隐藏属性与起始声望。"],
+                    BACKGROUND_OPTIONS.map(b=>[b.name,b.desc]),0).then(bg_idx=>{
+                    return build_player(era,position,trait,{kind:"欧洲",league:world.tiers[lg_idx],background:BACKGROUND_OPTIONS[bg_idx]});
+                  });
+                });
+              });
+          });
       });
     });
-  });
+}
+function build_player(era,position,trait,ctx){
+  // 踢法模板：由位置+技术特点推导（引擎兼容层）
+  const arch=POSITION_ARCHETYPES[position];
+  let playstyle;
+  if(arch.grp==="MID"||arch.grp==="DEF") playstyle="前插攻击手";
+  else if((position==="边锋"||position==="内锋")&&(trait.name==="速度型")) playstyle="高产边锋";
+  else if(position==="中锋"&&trait.name==="身体型") playstyle="高产边锋";
+  else playstyle="游弋边锋";
+  const p=new Player("林一鸣",playstyle,"C罗");
+  p.position=position; p.height=arch.h; p.year=era.year;
+  for(const k in trait.buff) p.attr[k]=clamp((p.attr[k]||0)+trait.buff[k],1,99);
+  for(const k in trait.penalty) p.attr[k]=clamp((p.attr[k]||0)+trait.penalty[k],1,99);
+  narr(`  年代：${era.year} 年。${era.desc}`);
+  narr(`  位置：${position} · 身高 ${arch.h} · 技术特点：${trait.name}`);
+  if(ctx.kind==="中国") apply_academy(p,ctx.academy);
+  else pick_euro_club(p,ctx.league);
+  apply_background(p,ctx.background);
+  const pa_roll=roll_pa(p);
+  p.season_attr_snapshot=Object.assign({},p.attr);
+  p.initial_attrs=Object.assign({},p.attr);
+  narr(`  🧬 基因技能卡：${p.skills.slice(0,4).join("/")}`);
+  narr(`  📋 球探报告（内部）：'天赋评估 —— 上限未知。只有时间会给出答案。'（你的 PA 已随机生成：${pa_roll>=96?"历史级":pa_roll>=92?"出众":"职业级"}——具体数值将在退役时揭晓）`);
+  narr(`  阵型起点：${p.coach.name} ${p.formation} ${p.coach.style} → 体系兼容度 ${p.playstyle_compat()}`);
+  narr(`  正式登场：${p.club}（${p.league}）· 周薪 ${p.wage}万 · 现金 ${p.money}万`);
+  return p;
 }
 
 /* ---------- 存档 ---------- */
@@ -6519,10 +6737,17 @@ function loadGame(){
 const Game={
   autopilot:false,
   interactive:true,
+  fastMode:false,
   p:null,
   season:0,
   running:false,
   saveKey:"tianxuan_save_v1",
+  togglePace(){
+    this.fastMode=!this.fastMode;
+    const b=document.getElementById("paceBtn");
+    if(b) b.textContent=this.fastMode?"⚡ 速览":"🎬 沉浸";
+    narr(this.fastMode?"  ⚡ 已切换到速览模式：比赛快速滚过，无关键时刻决策。":"  🎬 已切换到沉浸模式：比赛有节奏地推进，关键时刻需要你临场决策。");
+  },
   togglePanel(){
     if(!this.p) return;
     panel(this.p.panel());
