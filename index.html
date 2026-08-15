@@ -4947,6 +4947,7 @@ class Player {
     this.season_goals=[]; this.season_grade=null;
     this.age=CFG.prototype_defaults.age; this.year=CFG.prototype_defaults.start_year;
     this.league="中甲"; this.club="上海东亚"; this.role="轮换"; this.training_plan=null;
+    this.academy="根宝基地"; this.background="普通工薪";
     this.flags={};
     this.coach={name:"徐根宝",style:"边路传中",formation:"4-4-2",traits:80};
     this.formation="4-4-2";
@@ -5021,6 +5022,7 @@ class Player {
   panel(){
     const state=["冰凉","低迷","一般","平平","正常","正常","良好","火热"][this.form-1];
     let s=`【${this.name}】 ${this.age}岁 · ${this.club} · ${this.league} · 踢法：${this.playstyle}\n`;
+    s+=`出身：${this.academy} · 家境：${this.background}\n`;
     s+=`CA ${this.ca()} | 身价 ${this.value||'—'} | 教练：${this.coach.name}（${this.coach.style}·${this.formation}）→ 兼容度 ${this.playstyle_compat()}\n`;
     s+=`技术 | 射门${this.attr["射门"]} 盘带${this.attr["盘带"]} 停球${this.attr["停球"]} 传球${this.attr["传球"]} 任意球${this.attr["任意球"]} 头球${this.attr["头球"]}\n`;
     s+=`精神 | 预判${this.attr["预判"]} 视野${this.attr["视野"]} 镇定${this.attr["镇定"]} 决断${this.attr["决断"]} 意志力${this.attr["意志力"]}\n`;
@@ -6001,8 +6003,13 @@ function teammate_aging(p){
 function stage1(p, season){
   hr(`阶段一 · 夏季备战（${p.year}年 7-8月）· 第${season}季`);
   if(season===1){
-    narr("崇明岛，清晨五点半。海风裹着草腥味。你 16 岁，刚被提拔进一线队试训。");
-    narr("基地里已有人叫你'小怪物'——连过四人的进球，被徐根宝反复看了三遍。");
+    if(p.academy==="根宝基地"){
+      narr("崇明岛，清晨五点半。海风裹着草腥味。你 16 岁，刚被提拔进一线队试训。");
+      narr("基地里已有人叫你'小怪物'——连过四人的进球，被徐根宝反复看了三遍。");
+    } else {
+      narr(`${p.academy === "校园足球（非专业）" ? "你从校园操场一路踢进职业队" : p.academy}，破旧的更衣室，闷热的夏训营。你 16 岁，刚被提拔进 ${p.club} 一线队试训。`);
+      narr(`教练 ${p.coach.name} 拿着战术板看了你很久，最后点了点头：'这孩子，有东西。'`);
+    }
   } else narr(`又一个夏天。${p.club} 的训练营里，你已是熟面孔。`);
   p.panel();
   const plans=CFG.training_plans.map(t=>t.name);
@@ -6340,20 +6347,57 @@ function retirement(p){
 }
 
 /* ---------- 创建 ---------- */
+// 青训基地：起始球队 + 教练风格 + 属性侧重
+const ACADEMY_OPTIONS=[
+  {name:"根宝基地",club:"上海东亚",coach:{name:"徐根宝",style:"边路传中",formation:"4-4-2",traits:80},
+   buff:{盘带:2,传中:2,速度:1},desc:"上海崇明 · 边路传中流 · 技术+速度"},
+  {name:"鲁能足校",club:"山东鲁能",coach:{name:"图巴系教头",style:"边路传中",formation:"4-4-2",traits:78},
+   buff:{强壮:2,耐力:2,弹跳:1},desc:"山东济南 · 身体对抗流 · 强壮+耐力"},
+  {name:"浙江绿城青训",club:"浙江绿城",coach:{name:"冈田系教头",style:"控球",formation:"4-3-3",traits:80},
+   buff:{停球:2,传球:2,视野:1},desc:"杭州 · 技术流 · 停球+视野"},
+  {name:"恒大足校",club:"广州恒大",coach:{name:"里皮系教头",style:"均衡",formation:"4-3-3",traits:85},
+   buff:{速度:2,爆发力:2,射门:1},desc:"广州 · 全面流 · 速度+爆发 "},
+  {name:"校园足球（非专业）",club:"上海东亚",coach:{name:"徐根宝",style:"边路传中",formation:"4-4-2",traits:80},
+   buff:{决断:2,意志力:2},desc:"草根成长 · 精神属性+ · 起点更低"},
+];
+// 家境：初始资金 + 隐藏属性 + 初始声望
+const BACKGROUND_OPTIONS=[
+  {name:"贫寒农家",money:0.5,hidden:{决心:5,意志力:5,适应性:-3},reputation:-5,desc:"双倍训练狠劲，但零资源 · 决心+意志+，适应性-"},
+  {name:"普通工薪",money:5,hidden:{},reputation:0,desc:"起点均衡，家喻户晓从小做起"},
+  {name:"中产小康",money:20,hidden:{适应性:3},reputation:3,desc:"有余钱请私教 · 适应性+，初始资金宽裕"},
+  {name:"富二代",money:80,hidden:{适应性:5,决心:-3},reputation:8,desc:"家底雄厚+曝光起步 · 适应性+，但不够狠"},
+];
+function apply_academy(p,a){ p.academy=a.name; p.set_club(a.club, a.club==="广州恒大"||a.club==="山东鲁能"?"中超":"中甲");
+  p.coach=Object.assign({},a.coach); p.formation=a.coach.formation; p.tactical.formation=a.coach.formation;
+  for(const k in a.buff) p.attr[k]=clamp((p.attr[k]||0)+a.buff[k],1,99);
+  if(a.name!=="根宝基地"){ narr(`  → 青训生涯在【${a.name}】度过。你从 ${a.club} 的梯队起步。`); } }
+function apply_background(p,b){ p.background=b.name; p.money=b.money; if(b.money>5) p.money=b.money;
+  for(const k in b.hidden) p.hidden[k]=clamp((p.hidden[k]||0)+b.hidden[k],1,99);
+  p.reputation=clamp(p.reputation+(b.reputation||0),0,100);
+  narr(`  家境：${b.name}。${b.desc}`); }
 function creation(){
-  hr("球员创建 · 2008 · 根宝基地");
+  hr("球员创建 · 2008");
   const playstyles=Object.keys(CFG.playstyles);
   return ask("选择初始踢法",["三合一基因允许你从三种边路踢法起步。"],
     [["高产边锋","C罗曼联期：传中+爆发"],["游弋边锋","梅西右路：内切+射门"],["前插攻击手","后插上：无球跑动+直塞"]],0).then(ps_idx=>{
     return ask("职业素养路线（二选一）",["这决定你未来 24 年的样子。"],
       [["C罗路线：自律到偏执","职业素养90：伤病-40%，巅峰长"],["内马尔路线：天赋至上","职业素养65：表现+5%，伤病+40%"]],0).then(prof_idx=>{
-      const p=new Player("林一鸣",playstyles[ps_idx],"C罗"===(["C罗","内马尔"][prof_idx])?"C罗":"内马尔");
-      p.season_attr_snapshot=Object.assign({},p.attr);
-      p.initial_attrs=Object.assign({},p.attr);
-      narr(`身高187cm | 颜值99 | 惯用脚右脚(弱足4星) | PA 99(隐藏) | 初始CA ${p.ca()}`);
-      narr("基因技能卡：马赛回旋/电梯球/踩单车/牛尾巴/外脚背/挑球过人/诈术");
-      narr(`阵型起点：徐根宝 4-4-2 边路传中 → 你的兼容度 ${p.playstyle_compat()}`);
-      return p;
+      return ask("选择青训基地",["你从哪里起步？这决定初始球队、教练战术与属性侧重。"],
+        ACADEMY_OPTIONS.map(a=>[a.name,a.desc]),0).then(ac_idx=>{
+        return ask("选择家境",["你的家庭背景会影响初始资金、隐藏属性与起始声望。"],
+          BACKGROUND_OPTIONS.map(b=>[b.name,b.desc]),0).then(bg_idx=>{
+        const p=new Player("林一鸣",playstyles[ps_idx],"C罗"===(["C罗","内马尔"][prof_idx])?"C罗":"内马尔");
+        apply_academy(p,ACADEMY_OPTIONS[ac_idx]);
+        apply_background(p,BACKGROUND_OPTIONS[bg_idx]);
+        p.season_attr_snapshot=Object.assign({},p.attr);
+        p.initial_attrs=Object.assign({},p.attr);
+        narr(`身高187cm | 颜值99 | 惯用脚右脚(弱足4星) | PA 99(隐藏) | 初始CA ${p.ca()}`);
+        narr("基因技能卡：马赛回旋/电梯球/踩单车/牛尾巴/外脚背/挑球过人/诈术");
+        narr(`阵型起点：${p.coach.name} ${p.formation} ${p.coach.style} → 你的兼容度 ${p.playstyle_compat()}`);
+        narr(`正式登场：${p.club}（${p.league}）· 周薪 ${p.wage}万 · 现金 ${p.money}万`);
+        return p;
+        });
+      });
     });
   });
 }
